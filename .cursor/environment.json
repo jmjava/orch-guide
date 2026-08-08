@@ -1,5 +1,5 @@
 {
-  "name": "jmjava/orch-guide + orchestrator",
+  "name": "orch-guide",
   "install": "bash /agent/repos/orch-guide/.cursor/install.sh",
   "start": "bash /agent/repos/orch-guide/.cursor/start.sh",
   "repositoryDependencies": [
@@ -13,9 +13,21 @@
     }
   ],
   "ports": [
-    { "name": "guide (chat + MCP SSE)", "port": 1337 },
-    { "name": "guide research port", "port": 21337 },
-    { "name": "neo4j browser", "port": 7474 },
-    { "name": "neo4j bolt", "port": 7687 }
+    {
+      "name": "guide (chat + MCP SSE)",
+      "port": 1337
+    },
+    {
+      "name": "guide research port",
+      "port": 21337
+    },
+    {
+      "name": "neo4j browser",
+      "port": 7474
+    },
+    {
+      "name": "neo4j bolt",
+      "port": 7687
+    }
   ]
 }
