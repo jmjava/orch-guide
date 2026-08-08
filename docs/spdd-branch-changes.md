@@ -1,36 +1,45 @@
 # Branch change summary for Guide developers
 
-Branch: `cursor/spike-spdd-dice-projection-17f4` (tracks upstream `main`).
+Branch: `spdd-projection-v3` (successor of `cursor/spike-spdd-dice-projection-17f4`;
+tracks upstream `main`).
 Audience: developers who work on Guide and want to understand what this branch adds,
 why, and what the blast radius is.
 
 **One paragraph:** the branch turns Guide into an optional *hybrid context backend* for
 an SDLC workflow: alongside the existing RAG chunk store, an opt-in projection writes
 **typed domain entities** (`__Entity__` nodes: `WorkId`, `Canvas`, `Area`, `Decision`,
-`Pitfall`, `Pattern`) into the same Neo4j and exposes typed-edge retrieval over HTTP and
-MCP. Everything is behind `guide.spdd-projection.enabled` (default **false**); with the
-flag off, runtime behavior matches upstream except for the additions listed under
-"Cross-cutting" below.
+`Pitfall`, `Pattern`, `Session`, `Analysis`) into the same Neo4j and exposes typed-edge
+retrieval over HTTP and MCP. Everything is behind `guide.spdd-projection.enabled`
+(default **false**); with the flag off, runtime behavior matches upstream except for the
+additions listed under "Cross-cutting" below.
 
 ## 1. New package `com.embabel.guide.spdd` (all opt-in)
 
 | Class | Role |
 |-------|------|
 | `SpddEntityDictionary` | `DataDictionary.fromClasses` over `NamedEntity` domain types in `spdd.domain` — schema + label validation |
-| `SpddMarkdownProjectionService` | Parses structured markdown (`spdd/canvas/*.md`, `agent-context/memory/context-index.md`) and persists via `NamedEntityDataRepository.save` + `mergeRelationship` (merge-by-id, idempotent). Read side: `subgraphForWorkId`, `lessonsForArea`, `listByLabel` |
-| `SpddProjectionController` | Operator HTTP under `/api/v1/data/spdd-projection` (`load`, `stats`, `work/{workId}`, `area?name=`) with explicit status mapping (400 validation / 404 not found / 409 disabled) |
-| `SpddDomainTools` | `@LlmTool` methods exported to MCP as `spdd_*` via `McpToolExport.fromToolObject(ToolObject(...).withPrefix("spdd_"))`; failures return `{"error": …}` JSON |
+| `SpddMarkdownProjectionService` | Parses canvases (`spdd/canvas/*.md`) and the JSONL lessons ledger (`spdd/memory/lessons.jsonl`; record kinds `decision`/`pitfall`/`pattern`/`session`/`analysis`) and persists via `NamedEntityDataRepository.save` + `mergeRelationship` (merge-by-id, idempotent). Read side: `subgraphForWorkId`, `lessonsForArea`, `listByLabel`, `getLesson` |
+| `SpddProjectionController` | Operator HTTP under `/api/v1/data/spdd-projection` (`load`, `stats`, `work/{workId}`, `area?name=`, `lesson/{*id}`, `by-label?label=&limit=`) with explicit status mapping (400 validation / 404 not found / 409 disabled); responses are untruncated |
+| `SpddDomainTools` | `@LlmTool` methods exported to MCP as `spdd_*` via `McpToolExport.fromToolObject(ToolObject(...).withPrefix("spdd_"))`; lists capped (default 20, max 100), descriptions truncated at 300 chars with `… [truncated — fetch by id]`, full bodies via `spdd_getLesson`; failures return `{"error": …}` JSON |
 | `SpddProjectionConfiguration` | Beans: `DrivineNamedEntityDataRepository` wired with the SPDD dictionary + the MCP export. `@ConditionalOnProperty` on the enable flag |
 
 Graph model: `WorkId —canvas→ Canvas`, `WorkId —area→ Area`,
-`WorkId —decision/pitfall/pattern→ lesson`, `lesson —about→ Area`. The `about` edge is
-what makes lessons retrievable **across** work items by code area.
+`WorkId —decision/pitfall/pattern/session/analysis→ lesson`, `lesson —about→ Area`. The
+`about` edge is what makes lessons retrievable **across** work items by code area.
+Lesson entities carry the full record `body` plus `keywords` (a property list),
+`workId`, `area`, `source`, `phase`, and `ts` as properties; entity descriptions are
+capped at ~500 chars.
+
+Root resolution: when the resolved root contains an `sdlc-spdd/` directory (the
+orchestrator's single-folder install home), the projection descends into it; otherwise
+the root is used as-is.
 
 Hardening baked in: per-request `rootPath` overrides must resolve under
 `default-root-path` or configured `allowed-roots` (the load endpoint is on the
-permit-all list, so arbitrary filesystem roots are rejected); a malformed source file is
-skipped and counted (`skippedFiles`) instead of failing the load; list reads accept only
-schema labels and are capped (50 default / 200 max).
+permit-all list, so arbitrary filesystem roots are rejected); a malformed source file or
+JSONL line is skipped (files counted in `skippedFiles`) instead of failing the load;
+list reads accept only schema labels and are capped (50 default / 200 max over HTTP;
+MCP tools cap at 20 default / 100 max with 300-char description truncation).
 
 Uses only public library APIs (`NamedEntityData`, `NamedEntityDataRepository`,
 `RelationshipDirection`, `DataDictionary`). It does **not** touch the DICE proposition
@@ -56,8 +65,8 @@ the SPDD directory conventions only.
   off.
 - **`SecurityConfig`** — permit-all additions: POST `…/spdd-projection/load`,
   `…/git-ingestion/revision/reset`, `…/content-elements/purge{,-preview}`; GET
-  `…/spdd-projection/stats`, `…/work/*`, `…/area`. Same local-operator posture as the
-  existing `…/data/load-references`.
+  `…/spdd-projection/stats`, `…/work/*`, `…/area`, `…/lesson/**`, `…/by-label`. Same
+  local-operator posture as the existing `…/data/load-references`.
 - **`PersonaSeedingService`** — startup resilience: fails fast with an actionable
   message if the Drivine KSP query DSL is missing from the classpath, and persona
   seeding failures no longer abort startup (RAG/MCP stay available).
@@ -71,14 +80,18 @@ the SPDD directory conventions only.
 
 ## 4. Tests
 
-- `SpddMarkdownProjectionServiceTest` (16) — projection, idempotent reload, lesson/about
-  edges, root allowlist enforcement, blank/unknown input validation, list caps.
-- `SpddProjectionControllerTest` (8) — standalone MockMvc against the real service +
-  in-memory repository; verifies the 200/400/404 mapping.
-- `SpddDomainToolsTest` (8) — MCP JSON contract, `{"error": …}` on bad input.
+- `SpddMarkdownProjectionServiceTest` (22) — canvas + lessons.jsonl projection,
+  idempotent reload, lesson dedup, keywords property, lesson/about edges,
+  `sdlc-spdd/` effective-root resolution, root allowlist enforcement, blank/unknown
+  input validation, list caps, `getLesson` full-body fetch.
+- `SpddProjectionControllerTest` (11) — standalone MockMvc against the real service +
+  in-memory repository; verifies the 200/400/404 mapping including `lesson/{*id}` and
+  `by-label`.
+- `SpddDomainToolsTest` (13) — MCP JSON contract, list caps and description truncation,
+  `spdd_getLesson` untruncated body, `{"error": …}` on bad input.
 - `GitIncrementalDirectorySupportTest`, `RagMaintenanceControllerWebMvcTest`,
   `DataManagerControllerWebMvcTest` — incremental ingest + maintenance endpoints.
-- Fixture: `src/test/resources/spdd-fixture/` (minimal canvas + context index).
+- Fixture: `src/test/resources/spdd-fixture/` (minimal canvas + `spdd/memory/lessons.jsonl`).
 
 ## 5. How to review / try it
 
@@ -97,8 +110,8 @@ the SPDD directory conventions only.
   merge-by-id wiring, not a lingering `DynamicType` schema.
 - Entity→chunk join (`findChunksForEntity`) exists at the store level but is not exposed
   on the projection API yet.
-- `Operation`, session, and domain-keyword entities are declared in the schema roadmap
-  but not projected yet.
+- `Operation` entities are declared in the schema but not projected yet. Keywords are
+  stored as a property list on lesson entities, not as first-class entities.
 
 ## 7. Fork-only posture (never Embabel PR)
 

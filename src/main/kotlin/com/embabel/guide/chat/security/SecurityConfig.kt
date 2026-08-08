@@ -111,6 +111,8 @@ class SecurityConfig(
                     "/api/v1/data/spdd-projection/stats",
                     "/api/v1/data/spdd-projection/work/*",
                     "/api/v1/data/spdd-projection/area",
+                    "/api/v1/data/spdd-projection/lesson/**",
+                    "/api/v1/data/spdd-projection/by-label",
                     "/api/v1/deepgram/models",
                     "/api/hub/oauth/*/authorize",
                     "/api/hub/email/verify",
