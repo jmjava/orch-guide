@@ -1,12 +1,15 @@
 {
-  "name": "jmjava/guide bridge → orch-guide",
-  "install": "bash /agent/repos/guide/.cursor/install.sh",
-  "start": "bash /agent/repos/guide/.cursor/start.sh",
+  "name": "jmjava/orch-guide + orchestrator",
+  "install": "bash /agent/repos/orch-guide/.cursor/install.sh",
+  "start": "bash /agent/repos/orch-guide/.cursor/start.sh",
+  "repositoryDependencies": [
+    "github.com/jmjava/sdlc-spdd-orchestrator"
+  ],
   "terminals": [
     {
       "name": "guide-app",
-      "description": "Runs jmjava/orch-guide (durable home). Ensures /agent/repos/orch-guide then launches Guide + SPDD against orchestrator when present.",
-      "command": "bash /agent/repos/guide/.cursor/run-guide-app.sh"
+      "description": "Embabel Guide Spring Boot app (chat + MCP on :1337, or :21337 for research). Waits for Neo4j HTTP :7474, then prefers the fat jar from install (java -jar) with SPDD projection against the dual-repo orchestrator checkout when present. Set GUIDE_USE_MVN=1 to force Maven.",
+      "command": "bash /agent/repos/orch-guide/.cursor/run-guide-app.sh"
     }
   ],
   "ports": [
