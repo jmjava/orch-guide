@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Operator API for the DICE persist/retrieve contract (SPIKE-001 leg 3).
  *
- * Write: [load] — structured markdown → `__Entity__` (merge-by-id).
- * Read: [stats], [workSubgraph] — domain retrieval by Work ID join key.
+ * Write: [load] — structured markdown + lessons.jsonl → `__Entity__` (merge-by-id).
+ * Read: [stats], [workSubgraph], [getLesson], [byLabel] — domain retrieval by join keys.
  * MCP: [SpddDomainTools] exported as `spdd_*` when projection is enabled.
  */
 @RestController
@@ -40,6 +40,8 @@ class SpddProjectionController(
                 decisionCount = projectionService.entityCountByLabel("Decision"),
                 pitfallCount = projectionService.entityCountByLabel("Pitfall"),
                 patternCount = projectionService.entityCountByLabel("Pattern"),
+                sessionCount = projectionService.entityCountByLabel("Session"),
+                analysisCount = projectionService.entityCountByLabel("Analysis"),
                 entityLabel = com.embabel.agent.rag.model.NamedEntityData.ENTITY_LABEL,
             ),
         )
@@ -50,19 +52,37 @@ class SpddProjectionController(
         return if (subgraph.found) ResponseEntity.ok(subgraph) else ResponseEntity.notFound().build()
     }
 
-    /** Area names contain slashes/spaces, so the area arrives as a query parameter. */
     @GetMapping("/area")
     fun areaLessons(@RequestParam name: String): ResponseEntity<SpddAreaLessons> {
         val lessons = projectionService.lessonsForArea(name)
         return if (lessons.found) ResponseEntity.ok(lessons) else ResponseEntity.notFound().build()
     }
 
-    /** Validation failures (bad rootPath, blank workId, unknown label) → 400, not 500. */
+    @GetMapping("/lesson/{*id}")
+    fun getLesson(@PathVariable id: String): ResponseEntity<SpddLessonDetail> {
+        val lesson = projectionService.getLesson(id.removePrefix("/"))
+        return if (lesson != null) ResponseEntity.ok(lesson) else ResponseEntity.notFound().build()
+    }
+
+    @GetMapping("/by-label")
+    fun byLabel(
+        @RequestParam label: String,
+        @RequestParam(defaultValue = "${SpddMarkdownProjectionService.DEFAULT_LIST_RESULTS}") limit: Int,
+    ): ResponseEntity<SpddLabelListResponse> {
+        val items = projectionService.listByLabel(label, limit)
+        return ResponseEntity.ok(
+            SpddLabelListResponse(
+                label = label.trim(),
+                count = items.size,
+                items = items,
+            ),
+        )
+    }
+
     @ExceptionHandler(IllegalArgumentException::class)
     fun badRequest(e: IllegalArgumentException): ResponseEntity<ErrorResponse> =
         ResponseEntity.badRequest().body(ErrorResponse(e.message ?: "Invalid request"))
 
-    /** Feature disabled or otherwise misconfigured → 409. */
     @ExceptionHandler(IllegalStateException::class)
     fun conflict(e: IllegalStateException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(e.message ?: "Invalid state"))
@@ -76,6 +96,8 @@ class SpddProjectionController(
         val decisionCount: Int = 0,
         val pitfallCount: Int = 0,
         val patternCount: Int = 0,
+        val sessionCount: Int = 0,
+        val analysisCount: Int = 0,
         val entityLabel: String,
     )
 

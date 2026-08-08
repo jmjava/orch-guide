@@ -9,6 +9,7 @@ import com.embabel.guide.VersionedContentConfig
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -22,10 +23,12 @@ class SpddMarkdownProjectionServiceTest {
   @TempDir
   lateinit var tempDir: Path
 
+  private val objectMapper = ObjectMapper()
+
   // ---------------------------------------------------------------- persist
 
   @Test
-  fun `load projects work id canvas and area from markdown fixture`() {
+  fun `load projects work id canvas and area from fixture`() {
     val fixtureRoot = Path.of("src/test/resources/spdd-fixture").toAbsolutePath()
     val repo = inMemoryRepository()
     val service = service(repo, fixtureRoot.toString())
@@ -71,18 +74,16 @@ class SpddMarkdownProjectionServiceTest {
   }
 
   @Test
-  fun `load projects decision pitfall and pattern lessons with about edges`() {
+  fun `load projects decision pitfall pattern session and analysis from lessons jsonl`() {
     val root = buildProject(
       tempDir.resolve("lessons"),
       canvas = CANVAS,
-      contextIndex = """
-        # Context Index
-
-        | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-        |------|------|---------|-------|-----------|--------|-------|
-        | src/billing | decision | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | adr.md | use idempotency keys |
-        | src/billing | pitfall | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | pitfalls.md | retry storms |
-        | src/billing | pattern | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | patterns.md | outbox pattern |
+      lessonsJsonl = """
+        {"id":"decision:SPIKE-FIX-001-retrieval-fixture:src/billing:adr.md","kind":"decision","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"use idempotency keys","body":"detail about keys","source":"adr.md","schema":1}
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:pitfalls.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"retry storms","body":"avoid unbounded retries","source":"pitfalls.md","schema":1}
+        {"id":"pattern:SPIKE-FIX-001-retrieval-fixture:src/billing:patterns.md","kind":"pattern","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"outbox pattern","body":"use transactional outbox","source":"patterns.md","schema":1}
+        {"id":"session:SPIKE-FIX-001-retrieval-fixture:src/billing:retro","kind":"session","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"retro","ts":"2026-07-05T14:00:00Z","title":"retro notes","body":"session summary text","source":"retro","schema":1}
+        {"id":"analysis:SPIKE-FIX-001-retrieval-fixture:engine:analysis","kind":"analysis","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"engine","phase":"analysis","ts":"2026-07-05T12:00:00Z","title":"domain analysis","body":"requirements breakdown","source":"analysis","schema":1}
       """.trimIndent(),
     )
     val repo = inMemoryRepository()
@@ -93,12 +94,52 @@ class SpddMarkdownProjectionServiceTest {
     assertEquals(1, result.decisions)
     assertEquals(1, result.pitfalls)
     assertEquals(1, result.patterns)
+    assertEquals(1, result.sessions)
+    assertEquals(1, result.analyses)
 
     val subgraph = service.subgraphForWorkId("SPIKE-FIX-001-retrieval-fixture")
     assertTrue(subgraph.found)
     assertEquals(listOf("use idempotency keys"), subgraph.decisions.map { it.name })
     assertEquals(listOf("retry storms"), subgraph.pitfalls.map { it.name })
     assertEquals(listOf("outbox pattern"), subgraph.patterns.map { it.name })
+    assertEquals(listOf("retro notes"), subgraph.sessions.map { it.name })
+    assertEquals(listOf("domain analysis"), subgraph.analyses.map { it.name })
+  }
+
+  @Test
+  fun `load projects keywords as entity property`() {
+    val root = buildProject(
+      tempDir.resolve("keywords"),
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"sqlite lock","body":"watch WAL mode","source":"p.md","keywords":["sqlite","wal"],"schema":1}
+      """.trimIndent(),
+    )
+    val service = service(inMemoryRepository(), root.toString())
+    service.load()
+
+    val lesson = service.getLesson("pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md")
+    assertNotNull(lesson)
+    assertEquals(listOf("sqlite", "wal"), lesson!!.keywords)
+  }
+
+  @Test
+  fun `resolveEffectiveRoot descends into sdlc-spdd home when present`() {
+    val parent = tempDir.resolve("workspace")
+    val orchestrator = parent.resolve("sdlc-spdd")
+    buildProject(
+      orchestrator,
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"retry storms","body":"detail","source":"p.md","schema":1}
+      """.trimIndent(),
+    )
+    val service = service(inMemoryRepository(), parent.toString())
+
+    val result = service.load(parent.toString())
+
+    assertEquals(orchestrator.normalize().toString(), result.rootPath)
+    assertEquals(1, result.pitfalls)
   }
 
   // ------------------------------------------------------- root path guard
@@ -131,8 +172,6 @@ class SpddMarkdownProjectionServiceTest {
 
   @Test
   fun `load accepts override equal to the default root`() {
-    // Regression: Path is Iterable<Path>, so `allowedRoots + defaultRoot` once appended
-    // the default root's COMPONENTS, rejecting even an override identical to the default.
     val root = copyFixtureTo(tempDir.resolve("project"))
     val service = service(inMemoryRepository(), root.toString())
 
@@ -194,13 +233,9 @@ class SpddMarkdownProjectionServiceTest {
     val root = buildProject(
       tempDir.resolve("cross"),
       canvas = CANVAS,
-      contextIndex = """
-        # Context Index
-
-        | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-        |------|------|---------|-------|-----------|--------|-------|
-        | src/billing | pitfall | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | pitfalls.md | retry storms |
-        | src/billing | decision | FEAT-002-other-work | code | 2026-07-06T13:00:00Z | adr.md | use idempotency keys |
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:pitfalls.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"retry storms","body":"detail","source":"pitfalls.md","schema":1}
+        {"id":"decision:FEAT-002-other-work:src/billing:adr.md","kind":"decision","work_id":"FEAT-002-other-work","area":"src/billing","title":"use idempotency keys","body":"detail","source":"adr.md","schema":1}
       """.trimIndent(),
     )
     val service = service(inMemoryRepository(), root.toString())
@@ -209,7 +244,6 @@ class SpddMarkdownProjectionServiceTest {
     val lessons = service.lessonsForArea("src/billing")
 
     assertTrue(lessons.found)
-    // Lessons from BOTH work ids arrive via the area, which is the cross-run guarantee.
     assertEquals(listOf("retry storms"), lessons.pitfalls.map { it.name })
     assertEquals(listOf("use idempotency keys"), lessons.decisions.map { it.name })
     assertTrue(lessons.workIds.any { it.id == "SPIKE-FIX-001-retrieval-fixture" })
@@ -230,6 +264,32 @@ class SpddMarkdownProjectionServiceTest {
   }
 
   @Test
+  fun `getLesson returns full body untruncated`() {
+    val longBody = "x".repeat(600)
+    val root = buildProject(
+      tempDir.resolve("full-body"),
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"short title","body":"$longBody","source":"p.md","schema":1}
+      """.trimIndent(),
+    )
+    val service = service(inMemoryRepository(), root.toString())
+    service.load()
+
+    val lesson = service.getLesson("pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md")
+    assertNotNull(lesson)
+    assertEquals(longBody, lesson!!.body)
+    assertTrue(lesson.description.length <= SpddMarkdownProjectionService.MAX_ENTITY_DESCRIPTION + 1)
+  }
+
+  @Test
+  fun `getLesson returns null for unknown id`() {
+    val service = service(inMemoryRepository(), copyFixtureTo(tempDir.resolve("p")).toString())
+    service.load()
+    assertEquals(null, service.getLesson("pitfall:UNKNOWN:area:src"))
+  }
+
+  @Test
   fun `listByLabel rejects labels outside the schema`() {
     val service = service(inMemoryRepository(), copyFixtureTo(tempDir.resolve("p")).toString())
     val e = assertThrows<IllegalArgumentException> { service.listByLabel("ContentElement") }
@@ -243,9 +303,23 @@ class SpddMarkdownProjectionServiceTest {
     service.load()
 
     assertEquals(1, service.listByLabel("WorkId", maxResults = 1).size)
-    // Out-of-range requests are clamped, not rejected.
     assertTrue(service.listByLabel("WorkId", maxResults = 0).isNotEmpty())
     assertTrue(service.listByLabel("WorkId", maxResults = 999999).size <= SpddMarkdownProjectionService.MAX_LIST_RESULTS)
+  }
+
+  @Test
+  fun `load deduplicates lessons by id`() {
+    val root = buildProject(
+      tempDir.resolve("dedupe"),
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {"id":"decision:SPIKE-FIX-001-retrieval-fixture:src/billing:adr.md","kind":"decision","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"first","body":"a","source":"adr.md","schema":1}
+        {"id":"decision:SPIKE-FIX-001-retrieval-fixture:src/billing:adr.md","kind":"decision","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"duplicate","body":"b","source":"adr.md","schema":1}
+      """.trimIndent(),
+    )
+    val service = service(inMemoryRepository(), root.toString())
+    val result = service.load()
+    assertEquals(1, result.decisions)
   }
 
   // ---------------------------------------------------------------- helpers
@@ -255,7 +329,7 @@ class SpddMarkdownProjectionServiceTest {
     defaultRootPath: String,
     allowedRoots: List<String> = emptyList(),
   ): SpddMarkdownProjectionService =
-    SpddMarkdownProjectionService(guideProperties(defaultRootPath, allowedRoots), repo)
+    SpddMarkdownProjectionService(guideProperties(defaultRootPath, allowedRoots), repo, objectMapper)
 
   private fun guideProperties(defaultRootPath: String, allowedRoots: List<String> = emptyList()) =
     GuideProperties(
@@ -292,69 +366,12 @@ class SpddMarkdownProjectionServiceTest {
     return target
   }
 
-  private fun buildProject(root: Path, canvas: String, contextIndex: String): Path {
+  private fun buildProject(root: Path, canvas: String, lessonsJsonl: String): Path {
     Files.createDirectories(root.resolve("spdd/canvas"))
-    Files.createDirectories(root.resolve("agent-context/memory"))
+    Files.createDirectories(root.resolve("spdd/memory"))
     Files.writeString(root.resolve("spdd/canvas/SPIKE-FIX-001-retrieval-fixture.md"), canvas)
-    Files.writeString(root.resolve("agent-context/memory/context-index.md"), contextIndex)
+    Files.writeString(root.resolve("spdd/memory/lessons.jsonl"), lessonsJsonl)
     return root
-  }
-
-  @Test
-  fun `load prefers lean spdd memory context-index when legacy absent`() {
-    val root = tempDir.resolve("lean-only")
-    Files.createDirectories(root.resolve("spdd/canvas"))
-    Files.createDirectories(root.resolve("spdd/memory"))
-    Files.writeString(root.resolve("spdd/canvas/SPIKE-FIX-001-retrieval-fixture.md"), CANVAS)
-    Files.writeString(
-      root.resolve("spdd/memory/context-index.md"),
-      """
-        # Context Index
-
-        | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-        |------|------|---------|-------|-----------|--------|-------|
-        | src/billing | decision | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | adr.md | lean index decision |
-      """.trimIndent(),
-    )
-    val service = service(inMemoryRepository(), root.toString())
-    val result = service.load()
-    assertEquals(1, result.decisions)
-    val subgraph = service.subgraphForWorkId("SPIKE-FIX-001-retrieval-fixture")
-    assertEquals(listOf("lean index decision"), subgraph.decisions.map { it.name })
-  }
-
-  @Test
-  fun `load merges lean and legacy context indexes without duplicating lessons`() {
-    val root = tempDir.resolve("dual-index")
-    Files.createDirectories(root.resolve("spdd/canvas"))
-    Files.createDirectories(root.resolve("spdd/memory"))
-    Files.createDirectories(root.resolve("agent-context/memory"))
-    Files.writeString(root.resolve("spdd/canvas/SPIKE-FIX-001-retrieval-fixture.md"), CANVAS)
-    val sharedRow =
-      "| src/billing | decision | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | adr.md | shared decision |"
-    val leanOnly =
-      "| src/billing | pitfall | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | p.md | lean pitfall |"
-    val legacyOnly =
-      "| src/billing | pattern | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | pat.md | legacy pattern |"
-    val header = """
-      # Context Index
-
-      | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-      |------|------|---------|-------|-----------|--------|-------|
-    """.trimIndent()
-    Files.writeString(
-      root.resolve("spdd/memory/context-index.md"),
-      "$header\n$sharedRow\n$leanOnly\n",
-    )
-    Files.writeString(
-      root.resolve("agent-context/memory/context-index.md"),
-      "$header\n$sharedRow\n$legacyOnly\n",
-    )
-    val service = service(inMemoryRepository(), root.toString())
-    val result = service.load()
-    assertEquals(1, result.decisions)
-    assertEquals(1, result.pitfalls)
-    assertEquals(1, result.patterns)
   }
 
   private fun inMemoryRepository(): NamedEntityDataRepository {

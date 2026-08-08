@@ -9,6 +9,8 @@ data class SpddProjectionResult(
     val decisions: Int,
     val pitfalls: Int,
     val patterns: Int = 0,
+    val sessions: Int = 0,
+    val analyses: Int = 0,
     val relationships: Int,
     /** Source files that failed to parse/persist and were skipped (load continues past them). */
     val skippedFiles: Int = 0,
@@ -37,6 +39,8 @@ data class SpddWorkIdSubgraph(
     val decisions: List<SpddEntitySummary> = emptyList(),
     val pitfalls: List<SpddEntitySummary> = emptyList(),
     val patterns: List<SpddEntitySummary> = emptyList(),
+    val sessions: List<SpddEntitySummary> = emptyList(),
+    val analyses: List<SpddEntitySummary> = emptyList(),
 )
 
 /**
@@ -51,4 +55,29 @@ data class SpddAreaLessons(
     val decisions: List<SpddEntitySummary> = emptyList(),
     val pitfalls: List<SpddEntitySummary> = emptyList(),
     val patterns: List<SpddEntitySummary> = emptyList(),
+    val sessions: List<SpddEntitySummary> = emptyList(),
+    val analyses: List<SpddEntitySummary> = emptyList(),
+)
+
+/** Full lesson record for on-demand fetch (untruncated body). */
+data class SpddLessonDetail(
+    val id: String,
+    val name: String,
+    val description: String,
+    val body: String,
+    val labels: List<String>,
+    val uri: String?,
+    val keywords: List<String> = emptyList(),
+    val workId: String? = null,
+    val area: String? = null,
+    val source: String? = null,
+    val phase: String? = null,
+    val ts: String? = null,
+)
+
+/** Label listing response for HTTP parity checks. */
+data class SpddLabelListResponse(
+    val label: String,
+    val count: Int,
+    val items: List<SpddEntitySummary>,
 )
