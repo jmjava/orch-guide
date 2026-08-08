@@ -8,7 +8,7 @@
   "terminals": [
     {
       "name": "guide-app",
-      "description": "Embabel Guide Spring Boot app (chat + MCP on :1337, or :21337 for research). Waits for Neo4j HTTP :7474, then prefers the fat jar from install (java -jar) with SPDD projection against the dual-repo orchestrator checkout when present. Set GUIDE_USE_MVN=1 to force Maven.",
+      "description": "Embabel Guide Spring Boot app (chat + MCP on :1337, or :21337 for research). Prefers fat jar; SPDD against orchestrator when present.",
       "command": "bash /agent/repos/orch-guide/.cursor/run-guide-app.sh"
     }
   ],
