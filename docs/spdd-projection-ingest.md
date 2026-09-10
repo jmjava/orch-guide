@@ -138,8 +138,9 @@ updates separately.
 - `SpddDomainTools` — MCP `spdd_*` retrieve tools (`@LlmTool`)
 - `SpddProjectionConfiguration` — `DrivineNamedEntityDataRepository` + MCP export beans
 
-## Branch
+## Pin
 
 Originally developed on `cursor/spike-spdd-dice-projection-17f4` (pair with orchestrator
 `cursor/spike-guide-ingest-agent-context-17f4`). Projection v3 (JSONL lessons ledger,
-Session/Analysis entities, MCP caps, `spdd_getLesson`) lands on `spdd-projection-v3`.
+Session/Analysis entities, MCP caps, `spdd_getLesson`) is on `main` and tagged
+`spdd-projection-v3` (`187d4d4`).

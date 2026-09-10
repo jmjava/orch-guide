@@ -40,9 +40,9 @@ Enforcement (both repos):
 | `jmjava/guide` `main` | Embabel fork + bridge scripts that clone/run orch-guide |
 | `embabel/guide` `main` | Read-only upstream baseline (fetch/merge **in**, never PR **out**) |
 
-Historical pin `sdlc-spdd-projection-v2` (context-index dual-read) is superseded by
-projection v3 on this repo. After merge, cut tag `spdd-projection-v3` so the
-orchestrator dogfood pin matches the code.
+Historical pin `sdlc-spdd-projection-v2` (context-index dual-read) is superseded.
+Current orchestrator dogfood pin: annotated tag `spdd-projection-v3` on
+`jmjava/orch-guide` `main` (`187d4d4`, PR #2).
 
 **Decision (Accepted):** keep the SPDD context-graph package **and**
 git-incremental / RAG maintenance on `jmjava/guide` / `jmjava/orch-guide`.

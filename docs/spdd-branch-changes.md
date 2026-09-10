@@ -1,11 +1,11 @@
-# Branch change summary for Guide developers
+# SPDD projection change summary for Guide developers
 
-Branch: `spdd-projection-v3` (successor of `cursor/spike-spdd-dice-projection-17f4`;
-tracks upstream `main`).
-Audience: developers who work on Guide and want to understand what this branch adds,
+Landed on `jmjava/orch-guide` `main` via PR #2; pin tag `spdd-projection-v3` (`187d4d4`).
+Successor of `cursor/spike-spdd-dice-projection-17f4`.
+Audience: developers who work on Guide and want to understand what this increment adds,
 why, and what the blast radius is.
 
-**One paragraph:** the branch turns Guide into an optional *hybrid context backend* for
+**One paragraph:** this increment turns Guide into an optional *hybrid context backend* for
 an SDLC workflow: alongside the existing RAG chunk store, an opt-in projection writes
 **typed domain entities** (`__Entity__` nodes: `WorkId`, `Canvas`, `Area`, `Decision`,
 `Pitfall`, `Pattern`, `Session`, `Analysis`) into the same Neo4j and exposes typed-edge
