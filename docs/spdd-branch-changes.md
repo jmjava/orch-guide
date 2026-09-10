@@ -106,9 +106,9 @@ See **`docs/spdd-upstream-absorption.md`**. Short version:
 
 | Slice | Posture |
 |-------|---------|
-| `com.embabel.guide.spdd` + `spdd_*` MCP | **Keep on `jmjava/guide`** |
-| Git-incremental directory ingest + RAG maintenance | **Keep on `jmjava/guide`** (FEAT-013 complete; no Embabel PR) |
-| Ops hardening / Cloud Agent dual-repo `.cursor/*` | **Keep on `jmjava/guide`** |
+| `com.embabel.guide.spdd` + `spdd_*` MCP | **Keep on `jmjava/guide` / `jmjava/orch-guide`** |
+| Git-incremental directory ingest + RAG maintenance | **Keep on the fork** (FEAT-013 complete; no Embabel PR) |
+| Ops hardening / Cloud Agent `.cursor/*` | **Keep on `jmjava/orch-guide`**; `jmjava/guide` is a thin bridge |
 | `embabel/guide` | Fetch/merge **in** only — push/PR **out** forbidden |
 
 Guards: `.cursor/rules/no-embabel-upstream.mdc`,
