@@ -1,6 +1,6 @@
 # SPDD / context-graph fork posture (not an Embabel contribution queue)
 
-Audience: agents and humans working on `jmjava/guide`.
+Audience: agents and humans working on `jmjava/guide` or `jmjava/orch-guide`.
 
 Paired research: orchestrator Work ID
 `SPIKE-003-embabel-context-graph-absorption`.
@@ -9,16 +9,22 @@ Paired research: orchestrator Work ID
 
 **Never ask Embabel to merge.** Never open a PR/MR against `embabel/guide`.
 
-**Structural fix:** durable SPDD/dogfood Guide work now lives on standalone
-**[`jmjava/orch-guide`](https://github.com/jmjava/orch-guide)** (`main` + tag
-`sdlc-spdd-projection-v2`, bootstrapped 2026-08-08). Next: merge orchestrator
-retarget (PR #128), point Cloud Agent env at `orch-guide`, then **hard-reset this
-fork** to Embabel. See orchestrator
-[`docs/orch-guide-cutover.md`](https://github.com/jmjava/sdlc-spdd-orchestrator/blob/cursor/guide-persistence-pin-f564/docs/orch-guide-cutover.md).
+**Durable home:** SPDD/dogfood Guide work lives on standalone
+**[`jmjava/orch-guide`](https://github.com/jmjava/orch-guide)**.
+`jmjava/guide` stays an Embabel fork whose Cloud Agent env **bridges** to
+orch-guide (`ensure-orch-guide.sh`, PRs
+[#11](https://github.com/jmjava/guide/pull/11)–[#14](https://github.com/jmjava/guide/pull/14)).
+Orchestrator dogfood already targets orch-guide
+([PR #128](https://github.com/jmjava/sdlc-spdd-orchestrator/pull/128), merged
+2026-08-08).
 
-Until that hard-reset, `embabel/guide` is **fetch-only** into this fork.
+`embabel/guide` is **fetch-only**. Do not push, open a PR, or treat a leftover
+“hard-reset this fork to Embabel” note as a contribution path.
 
-Interim enforcement on this fork (orch-guide is already the durable home):
+See orchestrator
+[`docs/guide-flow.md`](https://github.com/jmjava/sdlc-spdd-orchestrator/blob/main/docs/guide-flow.md).
+
+Enforcement (both repos):
 
 | Layer | Mechanism |
 |-------|-----------|
@@ -26,17 +32,18 @@ Interim enforcement on this fork (orch-guide is already the durable home):
 | Git | `scripts/forbid-embabel-upstream.sh` + `scripts/install-git-hooks.sh` |
 | CI | `.github/workflows/forbid-embabel-upstream.yml` |
 
-## Current posture (2026-08-08)
+## Current posture (2026-09-10)
 
 | Home | Contents |
 |------|----------|
-| `jmjava/guide` pin `sdlc-spdd-projection-v2` (`28bdb5d`) | SPIKE-001 package + lean/legacy context-index dual-read ([PR #7](https://github.com/jmjava/guide/pull/7)) |
-| `jmjava/guide` tip (`main`) | Pin contents + this posture doc + Cloud Agent dual-repo env |
+| `jmjava/orch-guide` `main` | Durable SPDD/dogfood Guide + Cloud Agent env |
+| `jmjava/guide` `main` | Embabel fork + bridge scripts that clone/run orch-guide |
 | `embabel/guide` `main` | Read-only upstream baseline (fetch/merge **in**, never PR **out**) |
 
 **Decision (Accepted):** keep the SPDD context-graph package **and**
-git-incremental / RAG maintenance on this fork. Do **not** treat any slice as
-an Embabel merge request. Dual-repo `.cursor/*` env files stay fork-local.
+git-incremental / RAG maintenance on `jmjava/guide` / `jmjava/orch-guide`.
+Do **not** treat any slice as an Embabel merge request. Cloud Agent `.cursor/*`
+env files stay fork-local (real env on orch-guide; thin bridge on `jmjava/guide`).
 
 ### FEAT-013 status
 
@@ -50,12 +57,13 @@ an Embabel merge request. Dual-repo `.cursor/*` env files stay fork-local.
 - Entire `com.embabel.guide.spdd` package (`spdd_*` MCP, projection HTTP).
 - Git-incremental directory ingest + RAG maintenance operator APIs.
 - Ops hardening that exists for dogfood (Neo4j auth alignment, Persona resilience, etc.).
-- Cloud Agent dual-repo `.cursor/*` install/start scripts.
+- Cloud Agent `.cursor/*` install/start scripts (orch-guide) and the
+  `jmjava/guide` → orch-guide bridge.
 
 ## Sync process (inbound only)
 
 1. `git fetch upstream main` (push URL for `upstream` must be `DISABLED`).
-2. Merge/rebase **into** `jmjava/guide`.
+2. Merge/rebase **into** `jmjava/guide` or `jmjava/orch-guide` only.
 3. Re-run SPDD unit tests + smoke projection if the graph contract moved.
 4. Cut a successor pin tag when the orchestrator dogfood pin should move.
 
