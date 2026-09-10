@@ -12,10 +12,31 @@ as documentation, relevant blogs and other content, and up-to-the-minute API inf
 This repository is the backend for [Embabel Hub](https://hub.embabel.com) — the Guide powers the
 natural-language "Talk to the Docs" experience there.
 
+## This fork (`jmjava/orch-guide`)
+
+Durable SPDD/dogfood Guide home. **Fork-only** relative to
+[`embabel/guide`](https://github.com/embabel/guide): fetch/merge **in** only.
+Never open a PR or push to Embabel.
+
+**Dogfood pin:** annotated tag
+[`spdd-projection-v3`](https://github.com/jmjava/orch-guide/releases/tag/spdd-projection-v3)
+on this repo's `main` (`187d4d4`, [PR #2](https://github.com/jmjava/orch-guide/pull/2)).
+[PR #3](https://github.com/jmjava/orch-guide/pull/3) recorded that pin in the operator
+docs. Historical pin `sdlc-spdd-projection-v2` is superseded.
+
+Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
+canvases plus `spdd/memory/lessons.jsonl` (Session/Analysis, MCP list caps,
+`spdd_getLesson`).
+
+- [Fork posture](docs/spdd-upstream-absorption.md)
+- [Projection ingest](docs/spdd-projection-ingest.md)
+- [Change summary](docs/spdd-branch-changes.md)
+
 ## Links
 
 - [Embabel Hub](https://hub.embabel.com) — talk to the docs, powered by this Guide
 - [Embabel Agent Framework](https://github.com/embabel/embabel-agent)
+- [This repo](https://github.com/jmjava/orch-guide) — pin `spdd-projection-v3` (`187d4d4`)
 
 <p align="center">
   <a href="https://www.youtube.com/watch?v=hY6ZFMIJdd4" target="_blank">
