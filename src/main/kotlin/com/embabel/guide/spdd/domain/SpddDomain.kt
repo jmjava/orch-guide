@@ -92,3 +92,27 @@ data class Pattern(
     @field:Semantics([With(key = "predicate", value = "recorded for")])
     val workId: WorkId? = null,
 ) : NamedEntity
+
+@JsonClassDescription("Session capture (key points from a work session)")
+data class Session(
+    override val id: String,
+    override val name: String,
+    override val description: String,
+    val sourcePath: String = "",
+    @field:Semantics([With(key = "predicate", value = "about")])
+    val area: Area? = null,
+    @field:Semantics([With(key = "predicate", value = "recorded for")])
+    val workId: WorkId? = null,
+) : NamedEntity
+
+@JsonClassDescription("Analysis artifact (requirements / domain analysis)")
+data class Analysis(
+    override val id: String,
+    override val name: String,
+    override val description: String,
+    val sourcePath: String = "",
+    @field:Semantics([With(key = "predicate", value = "about")])
+    val area: Area? = null,
+    @field:Semantics([With(key = "predicate", value = "recorded for")])
+    val workId: WorkId? = null,
+) : NamedEntity

@@ -1,0 +1,1 @@
+{"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:known-pitfalls.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"idempotency key","body":"Always use idempotency keys on billing retries","source":"known-pitfalls.md","keywords":["billing","retry"],"schema":1}

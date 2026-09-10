@@ -21,23 +21,19 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import java.nio.file.Files
 import java.nio.file.Path
 
-/**
- * Wiring test: real service + in-memory repository behind the controller,
- * standalone MockMvc (no Spring context). Verifies status-code mapping added
- * in the hardening pass (400 for validation, 404 for unknown ids).
- */
 class SpddProjectionControllerTest {
 
   @TempDir
   lateinit var tempDir: Path
 
+  private val objectMapper = ObjectMapper()
   private lateinit var mockMvc: MockMvc
   private lateinit var root: Path
 
   @BeforeEach
   fun setUp() {
     root = buildProject(tempDir.resolve("project"))
-    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository())
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
     mockMvc = MockMvcBuilders.standaloneSetup(SpddProjectionController(service)).build()
   }
 
@@ -64,12 +60,14 @@ class SpddProjectionControllerTest {
   }
 
   @Test
-  fun `stats reports counts by label`() {
+  fun `stats reports counts by label including session and analysis`() {
     mockMvc.perform(post("/api/v1/data/spdd-projection/load").contentType(MediaType.APPLICATION_JSON))
     mockMvc.perform(get("/api/v1/data/spdd-projection/stats"))
       .andExpect(status().isOk)
       .andExpect(jsonPath("$.workIdCount").value(1))
       .andExpect(jsonPath("$.pitfallCount").value(1))
+      .andExpect(jsonPath("$.sessionCount").exists())
+      .andExpect(jsonPath("$.analysisCount").exists())
       .andExpect(jsonPath("$.entityLabel").value("__Entity__"))
   }
 
@@ -112,9 +110,36 @@ class SpddProjectionControllerTest {
       .andExpect(jsonPath("$.error").exists())
   }
 
+  @Test
+  fun `get lesson returns full record`() {
+    mockMvc.perform(post("/api/v1/data/spdd-projection/load").contentType(MediaType.APPLICATION_JSON))
+    mockMvc.perform(
+      get("/api/v1/data/spdd-projection/lesson/pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:pitfalls.md"),
+    )
+      .andExpect(status().isOk)
+      .andExpect(jsonPath("$.name").value("retry storms"))
+      .andExpect(jsonPath("$.body").value("avoid unbounded retries"))
+  }
+
+  @Test
+  fun `get lesson returns 404 for unknown id`() {
+    mockMvc.perform(get("/api/v1/data/spdd-projection/lesson/pitfall:UNKNOWN:area:src"))
+      .andExpect(status().isNotFound)
+  }
+
+  @Test
+  fun `by-label returns capped listing`() {
+    mockMvc.perform(post("/api/v1/data/spdd-projection/load").contentType(MediaType.APPLICATION_JSON))
+    mockMvc.perform(get("/api/v1/data/spdd-projection/by-label").param("label", "WorkId").param("limit", "10"))
+      .andExpect(status().isOk)
+      .andExpect(jsonPath("$.label").value("WorkId"))
+      .andExpect(jsonPath("$.count").value(1))
+      .andExpect(jsonPath("$.items[0].id").value("SPIKE-FIX-001-retrieval-fixture"))
+  }
+
   private fun buildProject(root: Path): Path {
     Files.createDirectories(root.resolve("spdd/canvas"))
-    Files.createDirectories(root.resolve("agent-context/memory"))
+    Files.createDirectories(root.resolve("spdd/memory"))
     Files.writeString(
       root.resolve("spdd/canvas/SPIKE-FIX-001-retrieval-fixture.md"),
       """
@@ -126,13 +151,9 @@ class SpddProjectionControllerTest {
       """.trimIndent(),
     )
     Files.writeString(
-      root.resolve("agent-context/memory/context-index.md"),
+      root.resolve("spdd/memory/lessons.jsonl"),
       """
-        # Context Index
-
-        | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-        |------|------|---------|-------|-----------|--------|-------|
-        | src/billing | pitfall | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | pitfalls.md | retry storms |
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:pitfalls.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"retry storms","body":"avoid unbounded retries","source":"pitfalls.md","schema":1}
       """.trimIndent(),
     )
     return root

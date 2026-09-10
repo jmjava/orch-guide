@@ -1,12 +1,14 @@
 package com.embabel.guide.spdd
 
 import com.embabel.agent.core.DataDictionary
+import com.embabel.guide.spdd.domain.Analysis
 import com.embabel.guide.spdd.domain.Area
 import com.embabel.guide.spdd.domain.Canvas
 import com.embabel.guide.spdd.domain.Decision
 import com.embabel.guide.spdd.domain.Operation
 import com.embabel.guide.spdd.domain.Pattern
 import com.embabel.guide.spdd.domain.Pitfall
+import com.embabel.guide.spdd.domain.Session
 import com.embabel.guide.spdd.domain.WorkId
 
 /**
@@ -25,6 +27,8 @@ object SpddEntityDictionary {
         Decision::class.java,
         Pitfall::class.java,
         Pattern::class.java,
+        Session::class.java,
+        Analysis::class.java,
     )
 
     /** Labels of the SPDD domain schema; used to validate retrieve-side label parameters. */

@@ -17,10 +17,6 @@ import org.mockito.Mockito
 import java.nio.file.Files
 import java.nio.file.Path
 
-/**
- * MCP tool contract: every tool returns JSON, and validation failures surface
- * as `{"error": …}` payloads rather than exceptions escaping to the protocol layer.
- */
 class SpddDomainToolsTest {
 
   @TempDir
@@ -32,7 +28,7 @@ class SpddDomainToolsTest {
   @BeforeEach
   fun setUp() {
     val root = buildProject(tempDir.resolve("project"))
-    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository())
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
     service.load()
     tools = SpddDomainTools(service, objectMapper)
   }
@@ -59,10 +55,41 @@ class SpddDomainToolsTest {
   }
 
   @Test
-  fun `projectionStats counts all schema labels`() {
+  fun `workSubgraph caps list sizes with default limit`() {
+    val root = buildProjectManyPitfalls(tempDir.resolve("many"), count = 25)
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
+    service.load()
+    val manyTools = SpddDomainTools(service, objectMapper)
+
+    val json = objectMapper.readTree(manyTools.workSubgraph("SPIKE-FIX-001-retrieval-fixture"))
+    assertEquals(SpddMarkdownProjectionService.TOOL_DEFAULT_LIMIT, json["pitfalls"].size())
+  }
+
+  @Test
+  fun `workSubgraph truncates long descriptions`() {
+    val longBody = "z".repeat(400)
+    val root = buildProject(
+      tempDir.resolve("truncate"),
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"short","body":"$longBody","source":"p.md","schema":1}
+      """.trimIndent(),
+    )
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
+    service.load()
+    val truncTools = SpddDomainTools(service, objectMapper)
+
+    val json = objectMapper.readTree(truncTools.workSubgraph("SPIKE-FIX-001-retrieval-fixture"))
+    val desc = json["pitfalls"][0]["description"].asText()
+    assertTrue(desc.contains(SpddMarkdownProjectionService.TRUNCATE_MARKER))
+  }
+
+  @Test
+  fun `projectionStats counts all schema labels including session and analysis`() {
     val json = objectMapper.readTree(tools.projectionStats())
     assertEquals(1, json["workIdCount"].asInt())
     assertEquals(1, json["pitfallCount"].asInt())
+    assertTrue(json.has("sessionCount"))
+    assertTrue(json.has("analysisCount"))
     assertEquals("__Entity__", json["entityLabel"].asText())
   }
 
@@ -71,6 +98,17 @@ class SpddDomainToolsTest {
     val json = objectMapper.readTree(tools.findByLabel("WorkId"))
     assertEquals(1, json.size())
     assertEquals("SPIKE-FIX-001-retrieval-fixture", json[0]["id"].asText())
+  }
+
+  @Test
+  fun `findByLabel honors limit parameter`() {
+    val root = buildProjectManyPitfalls(tempDir.resolve("label-cap"), count = 30)
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
+    service.load()
+    val capTools = SpddDomainTools(service, objectMapper)
+
+    val json = objectMapper.readTree(capTools.findByLabel("Pitfall", limit = 5))
+    assertEquals(5, json.size())
   }
 
   @Test
@@ -93,9 +131,33 @@ class SpddDomainToolsTest {
     assertTrue(json.has("error"))
   }
 
-  private fun buildProject(root: Path): Path {
+  @Test
+  fun `getLesson returns full body untruncated`() {
+    val longBody = "y".repeat(500)
+    val root = buildProject(
+      tempDir.resolve("get-lesson"),
+      lessonsJsonl = """
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"t","body":"$longBody","source":"p.md","schema":1}
+      """.trimIndent(),
+    )
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
+    service.load()
+    val lessonTools = SpddDomainTools(service, objectMapper)
+
+    val json = objectMapper.readTree(lessonTools.getLesson("pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p.md"))
+    assertEquals(longBody, json["body"].asText())
+    assertFalse(json["body"].asText().contains(SpddMarkdownProjectionService.TRUNCATE_MARKER))
+  }
+
+  @Test
+  fun `getLesson reports not found for unknown id`() {
+    val json = objectMapper.readTree(tools.getLesson("pitfall:UNKNOWN:area:src"))
+    assertFalse(json["found"].asBoolean())
+  }
+
+  private fun buildProject(root: Path, lessonsJsonl: String = DEFAULT_LESSONS): Path {
     Files.createDirectories(root.resolve("spdd/canvas"))
-    Files.createDirectories(root.resolve("agent-context/memory"))
+    Files.createDirectories(root.resolve("spdd/memory"))
     Files.writeString(
       root.resolve("spdd/canvas/SPIKE-FIX-001-retrieval-fixture.md"),
       """
@@ -106,17 +168,15 @@ class SpddDomainToolsTest {
         - Work ID: SPIKE-FIX-001-retrieval-fixture
       """.trimIndent(),
     )
-    Files.writeString(
-      root.resolve("agent-context/memory/context-index.md"),
-      """
-        # Context Index
-
-        | Area | Kind | Work ID | Phase | Timestamp | Source | Entry |
-        |------|------|---------|-------|-----------|--------|-------|
-        | src/billing | pitfall | SPIKE-FIX-001-retrieval-fixture | code | 2026-07-05T13:00:00Z | pitfalls.md | retry storms |
-      """.trimIndent(),
-    )
+    Files.writeString(root.resolve("spdd/memory/lessons.jsonl"), lessonsJsonl)
     return root
+  }
+
+  private fun buildProjectManyPitfalls(root: Path, count: Int): Path {
+    val lines = (1..count).joinToString("\n") { i ->
+      """{"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p$i.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"pitfall $i","body":"body $i","source":"p$i.md","schema":1}"""
+    }
+    return buildProject(root, lines)
   }
 
   private fun guideProperties(defaultRootPath: String) =
@@ -144,5 +204,11 @@ class SpddDomainToolsTest {
       embeddingService,
       ObjectMapper(),
     )
+  }
+
+  companion object {
+    private val DEFAULT_LESSONS = """
+      {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:pitfalls.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","phase":"code","ts":"2026-07-05T13:00:00Z","title":"retry storms","body":"avoid unbounded retries","source":"pitfalls.md","schema":1}
+    """.trimIndent()
   }
 }

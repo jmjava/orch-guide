@@ -36,7 +36,8 @@ class SpddProjectionConfiguration {
         )
 
     /**
-     * Expose leg-3 DICE retrieve as MCP tools (`spdd_workSubgraph`, `spdd_projectionStats`, `spdd_findByLabel`).
+     * Expose leg-3 DICE retrieve as MCP tools (`spdd_workSubgraph`, `spdd_projectionStats`,
+     * `spdd_findByLabel`, `spdd_areaLessons`, `spdd_getLesson`).
      */
     @Bean
     fun spddDomainMcpTools(
