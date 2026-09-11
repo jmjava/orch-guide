@@ -29,6 +29,9 @@ CI job `forbid-embabel-upstream` fails if a default or push URL targets `embabel
 Missing `gh` fail-closes that job (install the CLI or refuse to skip).
 Deleting `.cursor/rules/no-embabel-upstream.mdc` or dropping `alwaysApply: true`
 fails that job (named step **Cursor rule must stay alwaysApply**).
+The absorption doc (`docs/spdd-upstream-absorption.md`) is fork-local, not a
+contribution queue; a leftover that asks to upstream fails that job (named step
+**Absorption doc is fork-local (not a contribution queue)**).
 CI job `spdd-projection-unit` fails if projection/ingest contract tests vanish or break.
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
