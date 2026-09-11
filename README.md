@@ -24,6 +24,7 @@ on this repo's `main` (`187d4d4`, [PR #2](https://github.com/jmjava/orch-guide/p
 [PR #3](https://github.com/jmjava/orch-guide/pull/3) recorded that pin in the operator
 docs. Historical pin `sdlc-spdd-projection-v2` is superseded.
 CI job `assert-spdd-projection-pin` fails if that tag is missing or peels to another SHA.
+CI job `forbid-embabel-upstream` fails if a default or push URL targets `embabel/guide`.
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
 canvases plus `spdd/memory/lessons.jsonl` (Session/Analysis, MCP list caps,
