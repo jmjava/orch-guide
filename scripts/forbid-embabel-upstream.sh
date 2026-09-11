@@ -13,6 +13,7 @@
 # `git remote set-url` without --push — that would drop fetch-from-Embabel.
 # FORBID_GIT_ROOT overrides the repo the git remotes are read from (CI proving
 # tests). FORBID_GH_DEFAULT overrides the resolved gh nameWithOwner (tests).
+# FORBID_CURSOR_RULE overrides the Cursor rule path (tests).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -47,7 +48,9 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              Also fail if the hook destination URL is embabel/guide.
   --self-test
              Proving cases: default-push-url-fails, pre-push-url-fails,
-             fix-keeps-fetch, fix-disables-push, missing-gh-fail-closed.
+             fix-keeps-fetch, fix-disables-push, missing-gh-fail-closed,
+             cursor-rule-alwaysApply, deleting the rule keeps the job red,
+             dropping alwaysApply keeps the job red.
 EOF
 }
 
@@ -108,6 +111,27 @@ check_gh_default_repo() {
   fi
 }
 
+# Leftover #9: Cursor rule + mechanical guard must stay alwaysApply.
+# Deleting the rule or dropping front-matter alwaysApply must fail-closed
+# (CI red, visible in review — not silent). Body mentions of alwaysApply
+# do not count. FORBID_CURSOR_RULE overrides the path (tests).
+check_cursor_rule_always_apply() {
+  local cursor_rule="${FORBID_CURSOR_RULE:-${SCRIPT_ROOT}/.cursor/rules/no-embabel-upstream.mdc}"
+  if [[ ! -f "${cursor_rule}" ]]; then
+    echo "FORBIDDEN: missing Cursor rule ${cursor_rule}" >&2
+    echo "Deleting .cursor/rules/no-embabel-upstream.mdc must stay visible (CI red)." >&2
+    failures=1
+    return 0
+  fi
+  local fm
+  fm="$(awk 'BEGIN{p=0} /^---[[:space:]]*$/{p++; next} p==1{print}' "${cursor_rule}")"
+  if ! printf '%s\n' "${fm}" | grep -qE '^[[:space:]]*alwaysApply:[[:space:]]*true[[:space:]]*$'; then
+    echo "FORBIDDEN: ${cursor_rule} must set alwaysApply: true in front matter." >&2
+    echo "Dropping alwaysApply must stay visible (CI red)." >&2
+    failures=1
+  fi
+}
+
 apply_fix() {
   local name
   while read -r name; do
@@ -158,6 +182,8 @@ run_checks() {
   # Missing `gh` must fail-closed (do not skip). A default/nameWithOwner of
   # embabel/guide must fail. --fix does not set or unset this (push-URL only).
   check_gh_default_repo
+
+  check_cursor_rule_always_apply
 
   if (( failures )); then
     return 1
@@ -253,6 +279,99 @@ self_test() {
     return 1
   fi
   echo "PROVE OK: missing-gh-fail-closed"
+
+  # Leftover #9: Cursor rule + mechanical guard must stay alwaysApply.
+  # Deleting the rule or dropping alwaysApply must be visible (CI red), not silent.
+  echo "== proving: cursor-rule-alwaysApply =="
+  local rule wf
+  rule="${SCRIPT_ROOT}/.cursor/rules/no-embabel-upstream.mdc"
+  wf="${SCRIPT_ROOT}/.github/workflows/forbid-embabel-upstream.yml"
+  [[ -f "${rule}" ]] || {
+    echo "PROVE FAIL: missing ${rule}" >&2
+    return 1
+  }
+  local rule_fm
+  rule_fm="$(awk 'BEGIN{p=0} /^---[[:space:]]*$/{p++; next} p==1{print}' "${rule}")"
+  if ! printf '%s\n' "${rule_fm}" | grep -qE '^[[:space:]]*alwaysApply:[[:space:]]*true[[:space:]]*$'; then
+    echo "PROVE FAIL: rule front matter must set alwaysApply: true" >&2
+    return 1
+  fi
+  if ! grep -q 'check_cursor_rule_always_apply' "${script}"; then
+    echo "PROVE FAIL: forbid script must check the Cursor rule (mechanical guard)" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBID_CURSOR_RULE' "${script}"; then
+    echo "PROVE FAIL: forbid script must honor FORBID_CURSOR_RULE so deletion can be proven" >&2
+    return 1
+  fi
+  if ! grep -q 'Cursor rule must stay alwaysApply' "${wf}"; then
+    echo "PROVE FAIL: workflow must name the alwaysApply step so deletion is visible in review" >&2
+    return 1
+  fi
+  if ! grep -q 'p==1' "${wf}"; then
+    echo "PROVE FAIL: workflow alwaysApply step must parse front matter (body mention is not enough)" >&2
+    return 1
+  fi
+  if grep -q 'continue-on-error' "${wf}"; then
+    echo "PROVE FAIL: forbid job must not continue-on-error (missing rule would stay green)" >&2
+    return 1
+  fi
+  echo "PROVE OK: cursor-rule-alwaysApply"
+
+  echo "== proving: deleting the rule keeps the job red =="
+  local missing_rule_err gone_dir gone
+  missing_rule_err="$(mktemp)"
+  if env FORBID_CURSOR_RULE=/tmp/does-not-exist-no-embabel-upstream.mdc \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${missing_rule_err}"; then
+    echo "PROVE FAIL: missing cursor rule expected a red assertion" >&2
+    cat "${missing_rule_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN: missing Cursor rule' "${missing_rule_err}"; then
+    echo "PROVE FAIL: missing rule must print FORBIDDEN about missing Cursor rule" >&2
+    cat "${missing_rule_err}" >&2
+    return 1
+  fi
+  gone_dir="$(mktemp -d)"
+  gone="${gone_dir}/no-embabel-upstream.mdc"
+  expect_fail "deleted cursor rule file" \
+    env FORBID_CURSOR_RULE="${gone}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  echo "PROVE OK: deleting the rule keeps the job red"
+
+  echo "== proving: dropping alwaysApply keeps the job red =="
+  local dropped removed body_only drop_err
+  dropped="$(mktemp)"
+  cp "${rule}" "${dropped}"
+  sed -i 's/^alwaysApply: true/alwaysApply: false/' "${dropped}"
+  drop_err="$(mktemp)"
+  if env FORBID_CURSOR_RULE="${dropped}" FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" >/dev/null 2>"${drop_err}"; then
+    echo "PROVE FAIL: alwaysApply false expected a red assertion" >&2
+    cat "${drop_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'alwaysApply: true' "${drop_err}"; then
+    echo "PROVE FAIL: alwaysApply: false must mention the alwaysApply: true requirement" >&2
+    cat "${drop_err}" >&2
+    return 1
+  fi
+  removed="$(mktemp)"
+  grep -v '^alwaysApply:' "${rule}" > "${removed}"
+  expect_fail "alwaysApply dropped" \
+    env FORBID_CURSOR_RULE="${removed}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  body_only="$(mktemp)"
+  cat >"${body_only}" <<'EOF'
+---
+description: Hard rule — never contribute jmjava/orch-guide changes to embabel/guide.
+globs:
+---
+
+# Body mention of alwaysApply: true must not keep the job green.
+EOF
+  expect_fail "alwaysApply only in body" \
+    env FORBID_CURSOR_RULE="${body_only}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  echo "PROVE OK: dropping alwaysApply keeps the job red"
 
   echo "forbid-embabel-upstream: self-test ok"
 }
