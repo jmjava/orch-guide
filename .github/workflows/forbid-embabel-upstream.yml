@@ -9,10 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Refuse embabel/guide as a push destination
+      - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh
-          # CI checkout has only origin (jmjava/guide). Still run the guard.
+          ./scripts/forbid-embabel-upstream.sh --self-test
+      - name: Refuse embabel/guide as a push destination
+        run: |
+          # CI checkout has only origin (jmjava/orch-guide). Still run the guard.
           ./scripts/forbid-embabel-upstream.sh
           # Simulate a forbidden push URL — must fail.
           if ./scripts/forbid-embabel-upstream.sh --pre-push evil https://github.com/embabel/guide.git; then
@@ -20,3 +23,13 @@ jobs:
             exit 1
           fi
           echo "negative check OK"
+
+          # Typical clone leftover: upstream fetch == push == Embabel.
+          tmp="$(mktemp -d)"
+          git init -q "$tmp"
+          git -C "$tmp" remote add upstream https://github.com/embabel/guide.git
+          if FORBID_GIT_ROOT="$tmp" ./scripts/forbid-embabel-upstream.sh; then
+            echo "expected forbid script to fail when upstream can push to embabel/guide" >&2
+            exit 1
+          fi
+          echo "default-push-url-fails OK"
