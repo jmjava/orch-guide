@@ -127,7 +127,8 @@ See **`docs/spdd-upstream-absorption.md`**. Short version:
 Guards: `.cursor/rules/no-embabel-upstream.mdc`,
 `scripts/forbid-embabel-upstream.sh` (`--fix` keeps Embabel fetch; push `DISABLED`;
 absorption doc is fork-local — no leftover may ask to upstream;
-[`docs/cloud-agent-env.md`](cloud-agent-env.md) stays on this fork — do not PR Embabel),
+[`docs/cloud-agent-env.md`](cloud-agent-env.md) stays on this fork — do not PR Embabel;
+leftover text that treats FEAT/absorption/“clean Layer B branches” as an Embabel MR is refused),
 CI workflow.
 
 Orchestrator research lives under Work ID

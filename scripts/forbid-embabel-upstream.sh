@@ -7,6 +7,7 @@
 #   ./scripts/forbid-embabel-upstream.sh --fix
 #   ./scripts/forbid-embabel-upstream.sh --pre-push <remote-name> <remote-url>
 #   ./scripts/forbid-embabel-upstream.sh --self-test
+#   ./scripts/forbid-embabel-upstream.sh --leftover-text "Clean a Layer B branch for Embabel"
 #
 # --fix disables push on remotes named upstream/embabel whose fetch URL is
 # embabel/guide (fetch stays; push URL becomes DISABLED). Never use
@@ -16,6 +17,7 @@
 # FORBID_CURSOR_RULE overrides the Cursor rule path (tests).
 # FORBID_ABSORPTION_DOC overrides the absorption-doc path (tests).
 # FORBID_CLOUD_AGENT_ENV overrides the cloud-agent-env path (tests).
+# FORBID_LEFTOVER_TEXT leftover note/canvas text (tests; also --leftover-text).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -38,6 +40,7 @@ is_embabel_guide_repo() {
 usage() {
   cat <<'EOF'
 Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>]
+       forbid-embabel-upstream.sh --leftover-text "<note>"
        forbid-embabel-upstream.sh --self-test
 
   (default)  Fail if any remote can push to embabel/guide, if
@@ -48,6 +51,10 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              URL is embabel/guide. Fetch stays; push URL becomes DISABLED.
   --pre-push
              Also fail if the hook destination URL is embabel/guide.
+  --leftover-text
+             Scan leftover note/canvas text. Open an Embabel PR,
+             contribute absorption, or clean Layer B for Embabel is
+             FORBIDDEN (leftover #10). Leftover #6/#7 docs stay.
   --self-test
              Proving cases: default-push-url-fails, pre-push-url-fails,
              fix-keeps-fetch, fix-disables-push, missing-gh-fail-closed,
@@ -55,7 +62,11 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              dropping alwaysApply keeps the job red,
              absorption-doc-fork-local, no-leftover-asks-to-upstream,
              leftover-asks-to-upstream-fails,
-             cloud-agent-env-fork-local, do-not-pr-embabel.
+             cloud-agent-env-fork-local, do-not-pr-embabel,
+             leftover-that-cleans-layer-b-for-embabel-is-refused,
+             feat-work-as-embabel-mr-is-refused,
+             contribute-absorption-is-refused,
+             do-not-open-prs-small-or-large.
 EOF
 }
 
@@ -228,6 +239,88 @@ check_cloud_agent_env_fork_local() {
   done < "${env_doc}"
 }
 
+# Leftover #10: do not treat FEAT work, absorption docs, or “clean Layer B
+# branches” as a path to an Embabel merge request. Same family as leftover
+# #6/#7 leftover-ask scan. FORBID_LEFTOVER_TEXT / --leftover-text supplies
+# leftover note text (tests). Leftover #6/#7 docs stay.
+feat_absorption_embabel_mr_invitation() {
+  local line="${1:-}"
+  local lower
+  [[ -z "${line}" ]] && return 1
+  lower="$(printf '%s\n' "${line}" | tr '[:upper:]' '[:lower:]')"
+  if [[ "${lower}" =~ (do not|don.t|never |no leftover|no embabel|must not|refuse|forbidden|agents must|not a merge request) ]]; then
+    return 1
+  fi
+  if [[ "${lower}" =~ clean[[:alnum:][:space:]\"/_-]*layer[[:space:]]*b[[:alnum:][:space:]\"/_-]*(embabel|branch) ]]; then
+    return 0
+  fi
+  if [[ "${lower}" =~ open[[:alnum:][:space:]\"/_-]*(a[[:space:]]+)?(small|large)?[[:alnum:][:space:]\"/_-]*(prs?|mrs?|pull request)[[:alnum:][:space:]\"/_-]*embabel/guide ]]; then
+    return 0
+  fi
+  if [[ "${lower}" =~ open[[:alnum:][:space:]\"/_-]*an?[[:alnum:][:space:]\"/_-]*embabel[[:alnum:][:space:]\"/_-]*(pr|mr|pull request) ]]; then
+    return 0
+  fi
+  if [[ "${lower}" =~ contribute[[:alnum:][:space:]\"/_-]*absorption ]]; then
+    return 0
+  fi
+  if [[ "${lower}" =~ feat[[:alnum:][:space:]\"/_-]*(work|[[:digit:]]+)?[[:alnum:][:space:]\"/_-]*(embabel|merge request) ]]; then
+    return 0
+  fi
+  if [[ "${lower}" =~ absorption[[:alnum:][:space:]\"/_-]*(docs?)?[[:alnum:][:space:]\"/_-]*(embabel|merge request) ]]; then
+    return 0
+  fi
+  return 1
+}
+
+check_layer_b_embabel_leftover_refused() {
+  local absorption_doc="${FORBID_ABSORPTION_DOC:-${SCRIPT_ROOT}/docs/spdd-upstream-absorption.md}"
+  local env_doc="${FORBID_CLOUD_AGENT_ENV:-${SCRIPT_ROOT}/docs/cloud-agent-env.md}"
+  if [[ ! -f "${absorption_doc}" ]]; then
+    echo "FORBIDDEN: missing absorption doc ${absorption_doc}" >&2
+    echo "Leftover #6 absorption doc must stay; leftover #10 does not replace it." >&2
+    failures=1
+    return 0
+  fi
+  if [[ ! -f "${env_doc}" ]]; then
+    echo "FORBIDDEN: missing cloud-agent env notes ${env_doc}" >&2
+    echo "Leftover #7 cloud-agent-env notes must stay; leftover #10 does not replace them." >&2
+    failures=1
+  fi
+  if ! grep -qiE 'Do not open PRs to .?embabel/guide.? \(small or large\)' "${absorption_doc}"; then
+    echo "FORBIDDEN: ${absorption_doc} must say do not open PRs to embabel/guide (small or large)." >&2
+    failures=1
+  fi
+  if ! grep -qiE 'Any leftover that cleans a Layer B branch for Embabel is refused' "${absorption_doc}"; then
+    echo "FORBIDDEN: leftover that cleans a Layer B branch for Embabel must be refused." >&2
+    echo "${absorption_doc} must keep that leftover #10 sentinel." >&2
+    failures=1
+  fi
+  if ! grep -qiE 'Do not treat FEAT work, absorption docs, or .clean Layer B branches. as a path to an Embabel merge request' "${absorption_doc}"; then
+    echo "FORBIDDEN: leftover that treats FEAT/absorption/Layer B as an Embabel merge request must be refused." >&2
+    echo "${absorption_doc} must keep that leftover #10 sentinel." >&2
+    failures=1
+  fi
+  local leftover="${FORBID_LEFTOVER_TEXT:-}"
+  if [[ -n "${leftover}" ]]; then
+    if feat_absorption_embabel_mr_invitation "${leftover}" || leftover_line_asks_to_upstream "${leftover}"; then
+      echo "FORBIDDEN: leftover treats FEAT/absorption/Layer B as an Embabel merge request:" >&2
+      echo "  ${leftover}" >&2
+      echo "Open an Embabel PR / contribute absorption / clean Layer B for Embabel is FORBIDDEN." >&2
+      failures=1
+    fi
+  fi
+  local line
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if feat_absorption_embabel_mr_invitation "${line}"; then
+      echo "FORBIDDEN: leftover treats FEAT/absorption/Layer B as an Embabel merge request:" >&2
+      echo "  ${line}" >&2
+      echo "Do not treat FEAT work, absorption docs, or clean Layer B branches as an Embabel MR." >&2
+      failures=1
+      break
+    fi
+  done < "${absorption_doc}"
+}
+
 apply_fix() {
   local name
   while read -r name; do
@@ -282,6 +375,7 @@ run_checks() {
   check_cursor_rule_always_apply
   check_absorption_doc_fork_local
   check_cloud_agent_env_fork_local
+  check_layer_b_embabel_leftover_refused
 
   if (( failures )); then
     return 1
@@ -678,19 +772,214 @@ EOF
   fi
   echo "PROVE OK: do-not-pr-embabel"
 
+  # Leftover #10: leftover text that treats FEAT work, absorption docs, or
+  # “clean Layer B branches” as a path to an Embabel merge request is refused.
+  # Leftover #6/#7 docs stay.
+  echo "== proving: leftover-that-cleans-layer-b-for-embabel-is-refused =="
+  local wf_layer
+  wf_layer="${SCRIPT_ROOT}/.github/workflows/forbid-embabel-upstream.yml"
+  [[ -f "${absorption}" ]] || {
+    echo "PROVE FAIL: leftover #6 absorption doc must stay" >&2
+    return 1
+  }
+  [[ -f "${env_doc}" ]] || {
+    echo "PROVE FAIL: leftover #7 cloud-agent-env notes must stay" >&2
+    return 1
+  }
+  if ! grep -qiE 'Do not open PRs to .?embabel/guide.? \(small or large\)' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must say do not open PRs to embabel/guide (small or large)" >&2
+    return 1
+  fi
+  if ! grep -qiE 'Any leftover that cleans a Layer B branch for Embabel is refused' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must refuse leftover that cleans a Layer B branch for Embabel" >&2
+    return 1
+  fi
+  if ! grep -qiE 'Do not treat FEAT work, absorption docs, or .clean Layer B branches. as a path to an Embabel merge request' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must refuse FEAT/absorption/Layer B as an Embabel MR" >&2
+    return 1
+  fi
+  if ! grep -q 'check_layer_b_embabel_leftover_refused' "${script}"; then
+    echo "PROVE FAIL: forbid script must refuse leftover that cleans a Layer B branch for Embabel" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBID_LEFTOVER_TEXT' "${script}"; then
+    echo "PROVE FAIL: forbid script must honor FORBID_LEFTOVER_TEXT so leftover notes can be proven" >&2
+    return 1
+  fi
+  if ! grep -q -- '--leftover-text' "${script}"; then
+    echo "PROVE FAIL: forbid script must accept --leftover-text" >&2
+    return 1
+  fi
+  if ! grep -q 'Layer B leftover for Embabel is refused' "${wf_layer}"; then
+    echo "PROVE FAIL: workflow must name the Layer B leftover step so deletion is visible in review" >&2
+    return 1
+  fi
+  if ! grep -q 'Any leftover that cleans a Layer B branch for Embabel is refused' "${wf_layer}"; then
+    echo "PROVE FAIL: workflow must grep the Layer B leftover sentinel" >&2
+    return 1
+  fi
+  if ! grep -q -- '--leftover-text' "${wf_layer}"; then
+    echo "PROVE FAIL: workflow must invoke --leftover-text so a Layer B leftover keeps the job red" >&2
+    return 1
+  fi
+  local layer_b_err
+  layer_b_err="$(mktemp)"
+  if env FORBID_LEFTOVER_TEXT='Clean a Layer B branch for Embabel' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${layer_b_err}"; then
+    echo "PROVE FAIL: leftover-that-cleans-layer-b-for-embabel-is-refused expected a red assertion" >&2
+    cat "${layer_b_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN:' "${layer_b_err}"; then
+    echo "PROVE FAIL: leftover that cleans a Layer B branch for Embabel must print FORBIDDEN" >&2
+    cat "${layer_b_err}" >&2
+    return 1
+  fi
+  if ! grep -qiE 'Layer B' "${layer_b_err}"; then
+    echo "PROVE FAIL: leftover that cleans a Layer B branch for Embabel must mention that leftover" >&2
+    cat "${layer_b_err}" >&2
+    return 1
+  fi
+  expect_fail "leftover-text flag cleans Layer B" \
+    env FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" --leftover-text "cleans a Layer B branch for Embabel"
+  if ! env FORBID_LEFTOVER_TEXT='Keep Layer B on the fork; do not open PRs to embabel/guide' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" >/dev/null; then
+    echo "PROVE FAIL: fork-only leftover text must stay allowed" >&2
+    return 1
+  fi
+  if ! env FORBID_LEFTOVER_TEXT='Any leftover that cleans a Layer B branch for Embabel is refused' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" >/dev/null; then
+    echo "PROVE FAIL: refused leftover policy text must stay allowed" >&2
+    return 1
+  fi
+  echo "PROVE OK: leftover-that-cleans-layer-b-for-embabel-is-refused"
+
+  echo "== proving: feat-work-as-embabel-mr-is-refused =="
+  local feat_err
+  feat_err="$(mktemp)"
+  if env FORBID_LEFTOVER_TEXT='Treat FEAT work as an Embabel merge request' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${feat_err}"; then
+    echo "PROVE FAIL: feat-work-as-embabel-mr-is-refused expected a red assertion" >&2
+    cat "${feat_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN:' "${feat_err}"; then
+    echo "PROVE FAIL: leftover that treats FEAT work as an Embabel MR must print FORBIDDEN" >&2
+    cat "${feat_err}" >&2
+    return 1
+  fi
+  expect_fail "FEAT leftover text flag" \
+    env FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" --leftover-text "Open an Embabel PR for this FEAT"
+  if ! env FORBID_LEFTOVER_TEXT='Do not treat FEAT work, absorption docs, or clean Layer B branches as a path to an Embabel merge request' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" >/dev/null; then
+    echo "PROVE FAIL: leftover #10 policy leftover text must stay allowed" >&2
+    return 1
+  fi
+  echo "PROVE OK: feat-work-as-embabel-mr-is-refused"
+
+  echo "== proving: contribute-absorption-is-refused =="
+  local abs_err
+  abs_err="$(mktemp)"
+  if env FORBID_LEFTOVER_TEXT='Contribute absorption to Embabel' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${abs_err}"; then
+    echo "PROVE FAIL: contribute-absorption-is-refused expected a red assertion" >&2
+    cat "${abs_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN:' "${abs_err}"; then
+    echo "PROVE FAIL: leftover that contributes absorption must print FORBIDDEN" >&2
+    cat "${abs_err}" >&2
+    return 1
+  fi
+  expect_fail "absorption leftover text flag" \
+    env FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" --leftover-text "Treat absorption docs as an Embabel merge request"
+  echo "PROVE OK: contribute-absorption-is-refused"
+
+  echo "== proving: do-not-open-prs-small-or-large =="
+  expect_fail "small PR leftover" \
+    env FORBID_LEFTOVER_TEXT='Open a small PR to embabel/guide' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  expect_fail "large PR leftover" \
+    env FORBID_LEFTOVER_TEXT='Open a large PR to embabel/guide' \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  local dropped_layer_b dropped_feat dropped_small
+  dropped_layer_b="$(mktemp)"
+  cp "${absorption}" "${dropped_layer_b}"
+  sed -i '/Any leftover that cleans a Layer B branch for Embabel is refused/d' \
+    "${dropped_layer_b}"
+  local drop_layer_err
+  drop_layer_err="$(mktemp)"
+  if env FORBID_ABSORPTION_DOC="${dropped_layer_b}" FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" >/dev/null 2>"${drop_layer_err}"; then
+    echo "PROVE FAIL: dropping the Layer B leftover sentinel expected a red assertion" >&2
+    cat "${drop_layer_err}" >&2
+    return 1
+  fi
+  if ! grep -qiE 'cleans a Layer B branch for Embabel' "${drop_layer_err}"; then
+    echo "PROVE FAIL: dropping the Layer B leftover sentinel must mention that leftover" >&2
+    cat "${drop_layer_err}" >&2
+    return 1
+  fi
+  dropped_feat="$(mktemp)"
+  cp "${absorption}" "${dropped_feat}"
+  sed -i '/Do not treat FEAT work, absorption docs/d' "${dropped_feat}"
+  expect_fail "FEAT/absorption leftover sentinel dropped" \
+    env FORBID_ABSORPTION_DOC="${dropped_feat}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  dropped_small="$(mktemp)"
+  cp "${absorption}" "${dropped_small}"
+  sed -i '/small or large/d' "${dropped_small}"
+  local drop_small_err
+  drop_small_err="$(mktemp)"
+  if env FORBID_ABSORPTION_DOC="${dropped_small}" FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" >/dev/null 2>"${drop_small_err}"; then
+    echo "PROVE FAIL: dropping (small or large) expected a red assertion" >&2
+    cat "${drop_small_err}" >&2
+    return 1
+  fi
+  if ! grep -qiE 'small or large' "${drop_small_err}"; then
+    echo "PROVE FAIL: dropping (small or large) must mention small or large" >&2
+    cat "${drop_small_err}" >&2
+    return 1
+  fi
+  local layer_b_invite
+  layer_b_invite="$(mktemp)"
+  cat >"${layer_b_invite}" <<'EOF'
+# SPDD / context-graph fork posture (not an Embabel contribution queue)
+This document is fork-local.
+No leftover may ask to upstream.
+Do not open PRs to `embabel/guide` (small or large).
+Any leftover that cleans a Layer B branch for Embabel is refused.
+Do not treat FEAT work, absorption docs, or “clean Layer B branches” as a path to an Embabel merge request.
+Clean a Layer B branch for Embabel.
+EOF
+  expect_fail "layer-b leftover invitation keeps the job red" \
+    env FORBID_ABSORPTION_DOC="${layer_b_invite}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  echo "PROVE OK: do-not-open-prs-small-or-large"
+
   echo "forbid-embabel-upstream: self-test ok"
 }
 
 main() {
   local fix=0
   local filtered=()
-  local arg
-  for arg in "$@"; do
-    if [[ "${arg}" == "--fix" ]]; then
+  local args=("$@")
+  local i=0
+  while (( i < ${#args[@]} )); do
+    if [[ "${args[i]}" == "--fix" ]]; then
       fix=1
+    elif [[ "${args[i]}" == "--leftover-text" ]]; then
+      ((++i))
+      FORBID_LEFTOVER_TEXT="${args[i]:-}"
     else
-      filtered+=("${arg}")
+      filtered+=("${args[i]}")
     fi
+    ((++i))
   done
   set -- "${filtered[@]+"${filtered[@]}"}"
 
