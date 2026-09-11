@@ -1,0 +1,25 @@
+name: Assert SPDD projection pin tag
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  assert-spdd-projection-pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Prove missing tag and wrong SHA fail
+        run: |
+          chmod +x scripts/assert-spdd-projection-pin.sh
+          ./scripts/assert-spdd-projection-pin.sh --self-test
+
+      - name: Fetch pin tag from origin
+        run: git fetch origin "refs/tags/spdd-projection-v3:refs/tags/spdd-projection-v3" --no-tags --force
+
+      - name: Assert refs/tags/spdd-projection-v3 matches documented SHA
+        run: ./scripts/assert-spdd-projection-pin.sh

@@ -6,6 +6,7 @@
 | `append-ingest.sh` | Re-ingests without clearing existing data. Use when you've added new URLs or directories. Comment out already-ingested items in your profile to avoid re-processing them. |
 | `run-mcp-guide-against-hub.sh` | Run Guide on **`$GUIDE_PORT`** (default **1337**) for MCP at **`/sse`**, using the **same external Bolt defaults** as **`USE_EMBABEL_HUB_NEO4J=1`** in `append-ingest.sh` (self-contained script; no extra `lib/`). |
 | `shell.sh` | Runs the application in interactive shell mode. |
+| `assert-spdd-projection-pin.sh` | Fail-closed check that `refs/tags/spdd-projection-v3` exists and peels to the SHA in `spdd-projection-pin.env`. `--self-test` proves missing-tag and wrong-SHA go red. Does not retag. |
 
 Both ingestion scripts load your personal profile and run Guide with reload-on-startup. Watch application logs for ingestion progress. If **`ANTHROPIC_API_KEY`** is not set, `append-ingest.sh` exports a **`dummy-key`** placeholder so Spring starts (Anthropic autoconfigure requires the variable; ingestion embeddings use local ONNX). Put a real key in `.env` when you use Claude.
 
