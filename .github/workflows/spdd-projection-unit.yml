@@ -1,0 +1,39 @@
+# Leftover #5: dedicated unit job for fork-local SPDD projection
+# and git-incremental ingest. Same shape as jmjava/guide leftover #5 / PR #21.
+# The generic Maven Build job is pages-ish and can stay green if these
+# contract tests disappear into a skip or rename.
+# This job goes red if those contracts break or the required classes vanish.
+name: SPDD projection unit
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  spdd-projection-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prove job wiring (leftover #5)
+        run: |
+          chmod +x scripts/run-spdd-projection-unit.sh scripts/spdd-projection-unit-assert.sh
+          ./scripts/spdd-projection-unit-assert.sh
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Configure Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: ${{ secrets.EMBABEL_ARTIFACTORY }}
+
+      - name: Run SPDD projection and ingest unit tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_DUMMY_KEY }}
+        run: ./scripts/run-spdd-projection-unit.sh

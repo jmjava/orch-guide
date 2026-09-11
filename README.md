@@ -27,6 +27,7 @@ CI job `assert-spdd-projection-pin` fails if that tag is missing or peels to ano
 CI job `forbid-embabel-upstream` fails if a default or push URL targets `embabel/guide`.
 `--fix` keeps fetch-from-Embabel and sets that remote's push URL to `DISABLED`.
 Missing `gh` fail-closes that job (install the CLI or refuse to skip).
+CI job `spdd-projection-unit` fails if projection/ingest contract tests vanish or break.
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
 canvases plus `spdd/memory/lessons.jsonl` (Session/Analysis, MCP list caps,
