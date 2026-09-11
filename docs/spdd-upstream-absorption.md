@@ -34,6 +34,7 @@ Enforcement (both repos):
 | Agent | `.cursor/rules/no-embabel-upstream.mdc` (`alwaysApply`) |
 | Git | `scripts/forbid-embabel-upstream.sh` (`--fix` keeps fetch-from-Embabel; push becomes `DISABLED`) + `scripts/install-git-hooks.sh` |
 | CI | `.github/workflows/forbid-embabel-upstream.yml` |
+| Env | [`docs/cloud-agent-env.md`](cloud-agent-env.md) — Cloud-agent env notes stay on this fork. Do not PR Embabel. |
 
 ## Current posture (2026-09-10)
 

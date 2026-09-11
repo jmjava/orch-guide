@@ -39,6 +39,15 @@ jobs:
           grep -q 'not an Embabel contribution queue' docs/spdd-upstream-absorption.md
           grep -q 'fork-local' docs/spdd-upstream-absorption.md
           grep -q 'No leftover may ask to upstream' docs/spdd-upstream-absorption.md
+      - name: Cloud-agent env notes stay on this fork
+        run: |
+          # Leftover #7: Cloud Agent env notes stay on this fork.
+          # Do not PR Embabel. Missing/rewritten notes are CI-red.
+          chmod +x scripts/forbid-embabel-upstream.sh
+          test -f docs/cloud-agent-env.md
+          grep -q 'Cloud-agent env notes stay on this fork' docs/cloud-agent-env.md
+          grep -q 'fork-local' docs/cloud-agent-env.md
+          grep -q 'Do not PR Embabel' docs/cloud-agent-env.md
       - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh
