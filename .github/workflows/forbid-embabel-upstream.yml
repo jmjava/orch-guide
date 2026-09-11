@@ -21,12 +21,23 @@ jobs:
             exit 1
           fi
           gh --version
+      - name: Cursor rule must stay alwaysApply
+        run: |
+          # Leftover #9: deleting the rule or dropping alwaysApply is CI-red,
+          # not silent. Front matter only — a body mention must not keep this green.
+          chmod +x scripts/forbid-embabel-upstream.sh
+          test -f .cursor/rules/no-embabel-upstream.mdc
+          awk 'BEGIN{p=0} /^---[[:space:]]*$/{p++; next} p==1{print}' \
+            .cursor/rules/no-embabel-upstream.mdc \
+            | grep -qE '^[[:space:]]*alwaysApply:[[:space:]]*true[[:space:]]*$'
       - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh
           ./scripts/forbid-embabel-upstream.sh --self-test
       - name: Refuse embabel/guide as a push destination
         run: |
+          # Leftover #9: missing rule / dropped alwaysApply is proven inside
+          # --self-test (job stays red).
           # CI checkout has only origin (jmjava/orch-guide). Still run the guard.
           ./scripts/forbid-embabel-upstream.sh
           # Simulate a forbidden push URL — must fail.
