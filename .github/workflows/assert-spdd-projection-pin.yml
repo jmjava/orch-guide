@@ -31,8 +31,8 @@ jobs:
           grep -q 'silent-readme-edit-does-not-retag' scripts/assert-spdd-projection-pin.sh
           grep -q 'pin-stays-187d4d4' scripts/assert-spdd-projection-pin.sh
           grep -q 'LEFTOVER_8_PIN_SHA=187d4d4a27a8284bc4c6ee0709b226ac70aa0129' scripts/assert-spdd-projection-pin.sh
-          if grep -q 'continue-on-error' .github/workflows/assert-spdd-projection-pin.yml; then
-            echo "pin job must not continue-on-error (leftover #8 would stay green)" >&2
+          if grep -qE '^[[:space:]]*continue-on-error[[:space:]]*:' .github/workflows/assert-spdd-projection-pin.yml; then
+            echo "pin job must not set continue-on-error (leftover #8 would stay green)" >&2
             exit 1
           fi
 
