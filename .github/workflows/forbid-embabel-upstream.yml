@@ -48,6 +48,34 @@ jobs:
           grep -q 'Cloud-agent env notes stay on this fork' docs/cloud-agent-env.md
           grep -q 'fork-local' docs/cloud-agent-env.md
           grep -q 'Do not PR Embabel' docs/cloud-agent-env.md
+      - name: Layer B leftover for Embabel is refused
+        run: |
+          # Leftover #10: do not treat FEAT/absorption/"clean Layer B" as an
+          # Embabel merge request. Leftover #6/#7 docs stay.
+          chmod +x scripts/forbid-embabel-upstream.sh
+          test -f docs/spdd-upstream-absorption.md
+          test -f docs/cloud-agent-env.md
+          grep -qiE 'Do not open PRs to .embabel/guide. \(small or large\)' \
+            docs/spdd-upstream-absorption.md
+          grep -qiE 'Any leftover that cleans a Layer B branch for Embabel is refused' \
+            docs/spdd-upstream-absorption.md
+          grep -qiE 'Do not treat FEAT work, absorption docs, or .clean Layer B branches. as a path to an Embabel merge request' \
+            docs/spdd-upstream-absorption.md
+          if ./scripts/forbid-embabel-upstream.sh --leftover-text \
+               "Clean a Layer B branch for Embabel"; then
+            echo "expected leftover that cleans a Layer B branch for Embabel to be refused" >&2
+            exit 1
+          fi
+          if ./scripts/forbid-embabel-upstream.sh --leftover-text \
+               "Open an Embabel PR"; then
+            echo "expected leftover that opens an Embabel PR to be refused" >&2
+            exit 1
+          fi
+          if ./scripts/forbid-embabel-upstream.sh --leftover-text \
+               "Contribute absorption to Embabel"; then
+            echo "expected leftover that contributes absorption to be refused" >&2
+            exit 1
+          fi
       - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh
@@ -56,6 +84,8 @@ jobs:
         run: |
           # Leftover #9: missing rule / dropped alwaysApply is proven inside
           # --self-test (job stays red).
+          # Leftover #10: leftover that cleans a Layer B branch for Embabel,
+          # opens an Embabel PR, or contributes absorption is refused.
           # CI checkout has only origin (jmjava/orch-guide). Still run the guard.
           ./scripts/forbid-embabel-upstream.sh
           # Simulate a forbidden push URL — must fail.

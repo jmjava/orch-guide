@@ -37,6 +37,9 @@ contribution queue; a leftover that asks to upstream fails that job (named step
 Cloud-agent env notes (`docs/cloud-agent-env.md`) stay on this fork; a leftover
 that asks to PR Embabel fails that job (named step
 **Cloud-agent env notes stay on this fork**).
+Leftover text that treats FEAT work, absorption docs, or “clean Layer B
+branches” as an Embabel merge request fails that job (named step
+**Layer B leftover for Embabel is refused**).
 CI job `spdd-projection-unit` fails if projection/ingest contract tests vanish or break.
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
