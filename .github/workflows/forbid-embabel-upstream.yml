@@ -9,6 +9,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Require GitHub CLI (do not skip)
+        run: |
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "gh missing on runner; installing so the forbid job cannot skip" >&2
+            sudo apt-get update
+            sudo apt-get install -y gh
+          fi
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "FORBIDDEN: gh still missing after install; refuse to skip" >&2
+            exit 1
+          fi
+          gh --version
       - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh
@@ -34,8 +46,8 @@ jobs:
           fi
           echo "default-push-url-fails OK"
 
-          FORBID_GIT_ROOT="$tmp" ./scripts/forbid-embabel-upstream.sh --fix
-          FORBID_GIT_ROOT="$tmp" ./scripts/forbid-embabel-upstream.sh
+          FORBID_GIT_ROOT="$tmp" FORBID_GH_DEFAULT=jmjava/orch-guide ./scripts/forbid-embabel-upstream.sh --fix
+          FORBID_GIT_ROOT="$tmp" FORBID_GH_DEFAULT=jmjava/orch-guide ./scripts/forbid-embabel-upstream.sh
           fetch_url="$(git -C "$tmp" remote get-url upstream)"
           push_url="$(git -C "$tmp" remote get-url --push upstream)"
           case "$fetch_url" in

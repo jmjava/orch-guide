@@ -12,7 +12,7 @@
 # embabel/guide (fetch stays; push URL becomes DISABLED). Never use
 # `git remote set-url` without --push — that would drop fetch-from-Embabel.
 # FORBID_GIT_ROOT overrides the repo the git remotes are read from (CI proving
-# tests).
+# tests). FORBID_GH_DEFAULT overrides the resolved gh nameWithOwner (tests).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -20,13 +20,26 @@ ROOT="${FORBID_GIT_ROOT:-$SCRIPT_ROOT}"
 
 FORBIDDEN_RE='github\.com[:/]+embabel/guide(\.git)?(/*)?$'
 
+is_embabel_guide_repo() {
+  local raw="${1:-}"
+  raw="${raw//$'\r'/}"
+  raw="${raw#"${raw%%[![:space:]]*}"}"
+  raw="${raw%"${raw##*[![:space:]]}"}"
+  [[ -z "${raw}" ]] && return 1
+  case "${raw}" in
+    embabel/guide|embabel/guide.git) return 0 ;;
+  esac
+  [[ "${raw}" =~ ${FORBIDDEN_RE} ]]
+}
+
 usage() {
   cat <<'EOF'
 Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>]
        forbid-embabel-upstream.sh --self-test
 
-  (default)  Fail if any remote can push to embabel/guide, or if
-             GITHUB_REPOSITORY is embabel/guide.
+  (default)  Fail if any remote can push to embabel/guide, if
+             GITHUB_REPOSITORY is embabel/guide, or if gh is missing
+             (cannot verify the GitHub CLI default repo).
   --fix
              Disable push on remotes named upstream/embabel whose fetch
              URL is embabel/guide. Fetch stays; push URL becomes DISABLED.
@@ -34,7 +47,7 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              Also fail if the hook destination URL is embabel/guide.
   --self-test
              Proving cases: default-push-url-fails, pre-push-url-fails,
-             fix-keeps-fetch, fix-disables-push.
+             fix-keeps-fetch, fix-disables-push, missing-gh-fail-closed.
 EOF
 }
 
@@ -59,6 +72,39 @@ disable_fetch_only_push() {
   if [[ -n "${push_url}" && "${push_url}" =~ ${FORBIDDEN_RE} ]]; then
     git -C "$ROOT" remote set-url --push "${name}" DISABLED
     echo "Disabled push URL for remote '${name}' (fetch remains ${fetch_url})" >&2
+  fi
+}
+
+# Query from SCRIPT_ROOT so FORBID_GIT_ROOT remote fixtures do not change
+# what `gh` resolves (and --fix stays push-URL-only).
+check_gh_default_repo() {
+  local viewed="" resolved=""
+
+  if [[ -n "${FORBID_GH_DEFAULT:-}" ]]; then
+    viewed="${FORBID_GH_DEFAULT}"
+  elif command -v gh >/dev/null 2>&1; then
+    viewed="$(cd "${SCRIPT_ROOT}" && gh repo set-default --view 2>/dev/null || true)"
+    viewed="${viewed//$'\r'/}"
+    if [[ -z "${viewed}" ]]; then
+      resolved="$(cd "${SCRIPT_ROOT}" && gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || true)"
+      resolved="${resolved//$'\r'/}"
+      viewed="${resolved}"
+      if [[ -z "${viewed}" ]]; then
+        echo "SKIP: gh default repo unset and nameWithOwner could not be queried." >&2
+        return 0
+      fi
+    fi
+  else
+    echo "FORBIDDEN: gh not on PATH; cannot verify GitHub CLI default repo." >&2
+    echo "Install GitHub CLI. Missing gh must not skip this check." >&2
+    failures=1
+    return 0
+  fi
+
+  if is_embabel_guide_repo "${viewed}"; then
+    echo "FORBIDDEN: GitHub CLI default repo is embabel/guide (${viewed})." >&2
+    echo "Fix: gh repo set-default jmjava/orch-guide  # must be run from this repo" >&2
+    failures=1
   fi
 }
 
@@ -108,6 +154,11 @@ run_checks() {
     failures=1
   fi
 
+  # GitHub CLI default repo. Forks often resolve `gh pr create` to the parent.
+  # Missing `gh` must fail-closed (do not skip). A default/nameWithOwner of
+  # embabel/guide must fail. --fix does not set or unset this (push-URL only).
+  check_gh_default_repo
+
   if (( failures )); then
     return 1
   fi
@@ -147,7 +198,7 @@ self_test() {
     "${script}" --pre-push evil https://github.com/embabel/guide.git
 
   echo "== proving: fix-keeps-fetch / fix-disables-push =="
-  env FORBID_GIT_ROOT="${tmp}" "${script}" --fix
+  env FORBID_GIT_ROOT="${tmp}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" --fix
   local fetch_url push_url
   fetch_url="$(git -C "${tmp}" remote get-url upstream)"
   push_url="$(git -C "${tmp}" remote get-url --push upstream)"
@@ -165,7 +216,43 @@ self_test() {
     return 1
   fi
   echo "PROVE OK: fix-disables-push"
-  env FORBID_GIT_ROOT="${tmp}" "${script}"
+  env FORBID_GIT_ROOT="${tmp}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+
+  echo "== proving: missing-gh-fail-closed =="
+  local nogh filtered_path dir missing_out missing_err
+  nogh="$(mktemp -d)"
+  missing_out="$(mktemp)"
+  missing_err="$(mktemp)"
+  ln -s "$(command -v git)" "${nogh}/git"
+  ln -s "$(command -v bash)" "${nogh}/bash"
+  filtered_path=""
+  IFS=':'
+  for dir in ${PATH}; do
+    [[ -z "${dir}" ]] && continue
+    [[ -x "${dir}/gh" ]] && continue
+    if [[ -z "${filtered_path}" ]]; then
+      filtered_path="${dir}"
+    else
+      filtered_path="${filtered_path}:${dir}"
+    fi
+  done
+  unset IFS
+  if env PATH="${nogh}:${filtered_path}" FORBID_GH_DEFAULT= FORBID_GIT_ROOT="${tmp}" \
+       "${script}" >"${missing_out}" 2>"${missing_err}"; then
+    echo "PROVE FAIL: missing-gh-fail-closed expected a red assertion" >&2
+    cat "${missing_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN: gh not on PATH' "${missing_err}"; then
+    echo "PROVE FAIL: missing-gh-fail-closed should print FORBIDDEN about gh not on PATH" >&2
+    cat "${missing_err}" >&2
+    return 1
+  fi
+  if grep -q 'SKIP: gh not on PATH' "${missing_err}"; then
+    echo "PROVE FAIL: missing gh must not skip the forbid check" >&2
+    return 1
+  fi
+  echo "PROVE OK: missing-gh-fail-closed"
 
   echo "forbid-embabel-upstream: self-test ok"
 }

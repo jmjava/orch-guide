@@ -26,6 +26,7 @@ docs. Historical pin `sdlc-spdd-projection-v2` is superseded.
 CI job `assert-spdd-projection-pin` fails if that tag is missing or peels to another SHA.
 CI job `forbid-embabel-upstream` fails if a default or push URL targets `embabel/guide`.
 `--fix` keeps fetch-from-Embabel and sets that remote's push URL to `DISABLED`.
+Missing `gh` fail-closes that job (install the CLI or refuse to skip).
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
 canvases plus `spdd/memory/lessons.jsonl` (Session/Analysis, MCP list caps,
