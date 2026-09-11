@@ -24,6 +24,8 @@ on this repo's `main` (`187d4d4`, [PR #2](https://github.com/jmjava/orch-guide/p
 [PR #3](https://github.com/jmjava/orch-guide/pull/3) recorded that pin in the operator
 docs. Historical pin `sdlc-spdd-projection-v2` is superseded.
 CI job `assert-spdd-projection-pin` fails if that tag is missing or peels to another SHA.
+A silent README edit does not retag; leftover #8 keeps the pin at `187d4d4`
+(named step **Tag bump is a deliberate leftover**).
 CI job `forbid-embabel-upstream` fails if a default or push URL targets `embabel/guide`.
 `--fix` keeps fetch-from-Embabel and sets that remote's push URL to `DISABLED`.
 Missing `gh` fail-closes that job (install the CLI or refuse to skip).

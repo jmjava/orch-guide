@@ -18,6 +18,24 @@ jobs:
           chmod +x scripts/assert-spdd-projection-pin.sh
           ./scripts/assert-spdd-projection-pin.sh --self-test
 
+      - name: Tag bump is a deliberate leftover
+        run: |
+          # Leftover #8: do not retag from a silent README edit. Pin stays 187d4d4.
+          chmod +x scripts/assert-spdd-projection-pin.sh
+          grep -q 'Leftover #8' scripts/spdd-projection-pin.env
+          grep -q 'deliberate leftover' scripts/spdd-projection-pin.env
+          grep -q 'Do not retag' scripts/spdd-projection-pin.env
+          grep -q 'Pin stays 187d4d4' scripts/spdd-projection-pin.env
+          grep -q '^PIN_TAG=spdd-projection-v3$' scripts/spdd-projection-pin.env
+          grep -q '^PIN_SHA=187d4d4a27a8284bc4c6ee0709b226ac70aa0129$' scripts/spdd-projection-pin.env
+          grep -q 'silent-readme-edit-does-not-retag' scripts/assert-spdd-projection-pin.sh
+          grep -q 'pin-stays-187d4d4' scripts/assert-spdd-projection-pin.sh
+          grep -q 'LEFTOVER_8_PIN_SHA=187d4d4a27a8284bc4c6ee0709b226ac70aa0129' scripts/assert-spdd-projection-pin.sh
+          if grep -qE '^[[:space:]]*continue-on-error[[:space:]]*:' .github/workflows/assert-spdd-projection-pin.yml; then
+            echo "pin job must not set continue-on-error (leftover #8 would stay green)" >&2
+            exit 1
+          fi
+
       - name: Fetch pin tag from origin
         run: git fetch origin "refs/tags/spdd-projection-v3:refs/tags/spdd-projection-v3" --no-tags --force
 
