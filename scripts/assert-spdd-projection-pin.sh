@@ -2,6 +2,8 @@
 # Fail if refs/tags/<PIN_TAG> is missing or peels to a commit other than PIN_SHA.
 # Resolve the tag as refs/tags/... — a local branch of the same name must not count.
 # This script never creates, moves, or pushes the pin tag.
+# Leftover #8: tag bump is a deliberate leftover. Do not retag from a
+# silent README edit. Pin stays 187d4d4 (LEFTOVER_8_PIN_SHA).
 set -euo pipefail
 
 usage() {
@@ -10,14 +12,23 @@ Usage: assert-spdd-projection-pin.sh [--self-test]
 
   (default)  Fetch refs/tags/<PIN_TAG> from origin when present and fail if
              the tag is missing or peels to a commit other than PIN_SHA.
+             Leftover #8 also fails if pin.env is no longer 187d4d4.
   --self-test
              Proving cases in a throwaway repo: missing-tag-fails,
-             wrong-sha-fails, matching-sha-passes.
+             wrong-sha-fails, matching-sha-passes,
+             silent-readme-edit-does-not-retag, pin-stays-187d4d4,
+             assert-pin-never-retags.
 EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_PIN_FILE="${SCRIPT_DIR}/spdd-projection-pin.env"
+
+# Leftover #8: pin stays 187d4d4 until a leftover deliberately updates both
+# this constant and scripts/spdd-projection-pin.env. Do not retag from a
+# README-only edit.
+LEFTOVER_8_PIN_TAG=spdd-projection-v3
+LEFTOVER_8_PIN_SHA=187d4d4a27a8284bc4c6ee0709b226ac70aa0129
 
 load_pin() {
   local pin_file="$1"
@@ -106,6 +117,62 @@ assert_pin() {
   echo "assert-spdd-projection-pin: ok refs/tags/${PIN_TAG} -> ${actual}"
 }
 
+# Leftover #8: pin.env must stay on 187d4d4. A silent README leftover must
+# not bump PIN_SHA / PIN_TAG. Uses DEFAULT_PIN_FILE only (not throwaway pins).
+assert_leftover_8_pin_stays() {
+  local saved_tag="${PIN_TAG:-}"
+  local saved_sha="${PIN_SHA:-}"
+  local pin_file="${DEFAULT_PIN_FILE}"
+
+  if [[ ! -f "${pin_file}" ]]; then
+    echo "assert-spdd-projection-pin: leftover #8: missing pin file ${pin_file}" >&2
+    return 1
+  fi
+  if ! grep -q 'Leftover #8' "${pin_file}"; then
+    echo "assert-spdd-projection-pin: leftover #8: ${pin_file} must name leftover #8" >&2
+    return 1
+  fi
+  if ! grep -q 'deliberate leftover' "${pin_file}"; then
+    echo "assert-spdd-projection-pin: leftover #8: ${pin_file} must say tag bump is a deliberate leftover" >&2
+    return 1
+  fi
+  if ! grep -q 'Do not retag' "${pin_file}"; then
+    echo "assert-spdd-projection-pin: leftover #8: ${pin_file} must say Do not retag" >&2
+    return 1
+  fi
+  if ! grep -q 'Pin stays 187d4d4' "${pin_file}"; then
+    echo "assert-spdd-projection-pin: leftover #8: ${pin_file} must say Pin stays 187d4d4" >&2
+    return 1
+  fi
+
+  load_pin "${pin_file}"
+  if [[ "${PIN_TAG}" != "${LEFTOVER_8_PIN_TAG}" ]]; then
+    echo "assert-spdd-projection-pin: leftover #8: PIN_TAG must stay ${LEFTOVER_8_PIN_TAG}, got ${PIN_TAG}" >&2
+    PIN_TAG="${saved_tag}"
+    PIN_SHA="${saved_sha}"
+    return 1
+  fi
+  if [[ "${PIN_SHA}" != "${LEFTOVER_8_PIN_SHA}" ]]; then
+    echo "assert-spdd-projection-pin: leftover #8: pin stays 187d4d4, got ${PIN_SHA}" >&2
+    PIN_TAG="${saved_tag}"
+    PIN_SHA="${saved_sha}"
+    return 1
+  fi
+  PIN_TAG="${saved_tag}"
+  PIN_SHA="${saved_sha}"
+  echo "assert-spdd-projection-pin: leftover #8 pin-stays-187d4d4 ok"
+}
+
+# Leftover #8: assert_pin must never create or move the pin tag.
+assert_pin_never_retags() {
+  local script="${SCRIPT_DIR}/assert-spdd-projection-pin.sh"
+  if awk '/^assert_pin\(\)/,/^}/' "${script}" | grep -qE 'git[[:space:]]+(-C[[:space:]]+[^[:space:]]+[[:space:]]+)?tag[[:space:]]'; then
+    echo "PROVE FAIL: assert_pin must not create or move tags" >&2
+    return 1
+  fi
+  echo "PROVE OK: assert-pin-never-retags"
+}
+
 expect_fail() {
   local name="$1"
   shift
@@ -179,6 +246,37 @@ self_test() {
   git -C "${tmp}" tag -a "spdd-projection-v3" "${sha_a}" -m "correct pin"
   expect_pass "matching-sha-passes" assert_pin "${tmp}" "${pin}" ""
 
+  # Leftover #8: a silent README-only edit must not retag. Pin stays at sha_a.
+  echo "== proving: silent-readme-edit-does-not-retag =="
+  local tag_before tag_after sha_readme
+  tag_before="$(git -C "${tmp}" rev-parse --verify "refs/tags/spdd-projection-v3^{commit}")"
+  printf 'pin `spdd-projection-v3` (`%s`)\n\nSilent leftover README edit.\n' "${sha_a:0:7}" \
+    >"${tmp}/README.md"
+  git -C "${tmp}" add README.md
+  git -C "${tmp}" commit -q -m "docs: silent leftover readme"
+  sha_readme="$(git -C "${tmp}" rev-parse HEAD)"
+  expect_pass "silent-readme-edit-does-not-retag" assert_pin "${tmp}" "${pin}" ""
+  tag_after="$(git -C "${tmp}" rev-parse --verify "refs/tags/spdd-projection-v3^{commit}")"
+  if [[ "${tag_before}" != "${tag_after}" ]]; then
+    echo "PROVE FAIL: silent README edit retagged spdd-projection-v3" >&2
+    return 1
+  fi
+  if [[ "${tag_after}" == "${sha_readme}" ]]; then
+    echo "PROVE FAIL: tag moved to the README-only commit" >&2
+    return 1
+  fi
+  if [[ "${tag_after}" != "${sha_a}" ]]; then
+    echo "PROVE FAIL: tag no longer at original pin ${sha_a}" >&2
+    return 1
+  fi
+  echo "PROVE OK: silent-readme-edit-does-not-retag (tag stayed ${sha_a:0:7})"
+
+  echo "== proving: assert-pin-never-retags =="
+  assert_pin_never_retags
+
+  echo "== proving: pin-stays-187d4d4 =="
+  expect_pass "pin-stays-187d4d4" assert_leftover_8_pin_stays
+
   echo "assert-spdd-projection-pin: self-test ok"
 }
 
@@ -193,6 +291,7 @@ main() {
     "")
       local root
       root="$(cd "${SCRIPT_DIR}/.." && pwd)"
+      assert_leftover_8_pin_stays
       assert_pin "${root}" "${DEFAULT_PIN_FILE}" "origin"
       ;;
     *)
