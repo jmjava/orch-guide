@@ -14,6 +14,7 @@
 # FORBID_GIT_ROOT overrides the repo the git remotes are read from (CI proving
 # tests). FORBID_GH_DEFAULT overrides the resolved gh nameWithOwner (tests).
 # FORBID_CURSOR_RULE overrides the Cursor rule path (tests).
+# FORBID_ABSORPTION_DOC overrides the absorption-doc path (tests).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -50,7 +51,9 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              Proving cases: default-push-url-fails, pre-push-url-fails,
              fix-keeps-fetch, fix-disables-push, missing-gh-fail-closed,
              cursor-rule-alwaysApply, deleting the rule keeps the job red,
-             dropping alwaysApply keeps the job red.
+             dropping alwaysApply keeps the job red,
+             absorption-doc-fork-local, no-leftover-asks-to-upstream,
+             leftover-asks-to-upstream-fails.
 EOF
 }
 
@@ -132,6 +135,63 @@ check_cursor_rule_always_apply() {
   fi
 }
 
+# Leftover-ask: a line that tells a human to upstream / open an Embabel PR.
+# Same-line prohibitions (do not / never / no leftover / ...) are rules, not asks.
+leftover_line_asks_to_upstream() {
+  local line="${1:-}"
+  local lower
+  lower="$(printf '%s\n' "${line}" | tr '[:upper:]' '[:lower:]')"
+  if [[ "${lower}" =~ (do not|don.t|never|no leftover|must not|refuse|forbidden|agents must) ]]; then
+    return 1
+  fi
+  if [[ "${lower}" =~ should\ we\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ should\ i\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ please\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ let\'s\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ lets\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ ready\ to\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ consider\ upstreaming ]]; then return 0; fi
+  if [[ "${lower}" =~ ask\ .+\ to\ upstream ]]; then return 0; fi
+  if [[ "${lower}" =~ open\ an?\ embabel\ pr ]]; then return 0; fi
+  if [[ "${lower}" =~ contribute\ (this\ |it\ )?back ]]; then return 0; fi
+  return 1
+}
+
+# Leftover #6: absorption doc is fork-local, not a contribution queue.
+# No leftover may ask to upstream. Deleting or rewriting the doc as a
+# merge request must fail-closed (CI red). FORBID_ABSORPTION_DOC overrides
+# the path (tests).
+check_absorption_doc_fork_local() {
+  local absorption_doc="${FORBID_ABSORPTION_DOC:-${SCRIPT_ROOT}/docs/spdd-upstream-absorption.md}"
+  if [[ ! -f "${absorption_doc}" ]]; then
+    echo "FORBIDDEN: missing absorption doc ${absorption_doc}" >&2
+    echo "docs/spdd-upstream-absorption.md is fork-local, not a contribution queue." >&2
+    echo "Deleting it must stay visible (CI red)." >&2
+    failures=1
+    return 0
+  fi
+  if ! grep -q 'not an Embabel contribution queue' "${absorption_doc}"; then
+    echo "FORBIDDEN: ${absorption_doc} must declare it is not an Embabel contribution queue." >&2
+    failures=1
+  fi
+  if ! grep -q 'fork-local' "${absorption_doc}"; then
+    echo "FORBIDDEN: ${absorption_doc} must declare it is fork-local." >&2
+    failures=1
+  fi
+  if ! grep -q 'No leftover may ask to upstream' "${absorption_doc}"; then
+    echo "FORBIDDEN: ${absorption_doc} must say no leftover may ask to upstream." >&2
+    failures=1
+  fi
+  local line
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if leftover_line_asks_to_upstream "${line}"; then
+      echo "FORBIDDEN: leftover may not ask to upstream: ${line}" >&2
+      echo "No leftover may ask to upstream. Absorption doc is fork-local, not a contribution queue." >&2
+      failures=1
+    fi
+  done < "${absorption_doc}"
+}
+
 apply_fix() {
   local name
   while read -r name; do
@@ -184,6 +244,7 @@ run_checks() {
   check_gh_default_repo
 
   check_cursor_rule_always_apply
+  check_absorption_doc_fork_local
 
   if (( failures )); then
     return 1
@@ -372,6 +433,115 @@ EOF
   expect_fail "alwaysApply only in body" \
     env FORBID_CURSOR_RULE="${body_only}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
   echo "PROVE OK: dropping alwaysApply keeps the job red"
+
+  # Leftover #6: absorption doc is fork-local, not a contribution queue.
+  # No leftover may ask to upstream. Missing/rewritten doc must stay CI-red.
+  echo "== proving: absorption-doc-fork-local =="
+  local absorption wf_abs
+  absorption="${SCRIPT_ROOT}/docs/spdd-upstream-absorption.md"
+  wf_abs="${SCRIPT_ROOT}/.github/workflows/forbid-embabel-upstream.yml"
+  [[ -f "${absorption}" ]] || {
+    echo "PROVE FAIL: missing ${absorption}" >&2
+    return 1
+  }
+  if ! grep -q 'not an Embabel contribution queue' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must say it is not an Embabel contribution queue" >&2
+    return 1
+  fi
+  if ! grep -q 'fork-local' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must declare it is fork-local" >&2
+    return 1
+  fi
+  if ! grep -q 'No leftover may ask to upstream' "${absorption}"; then
+    echo "PROVE FAIL: absorption doc must say no leftover may ask to upstream" >&2
+    return 1
+  fi
+  if ! grep -q 'check_absorption_doc_fork_local' "${script}"; then
+    echo "PROVE FAIL: forbid script must check the absorption doc (mechanical guard)" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBID_ABSORPTION_DOC' "${script}"; then
+    echo "PROVE FAIL: forbid script must honor FORBID_ABSORPTION_DOC so leftover-asks can be proven" >&2
+    return 1
+  fi
+  if ! grep -q 'Absorption doc is fork-local' "${wf_abs}"; then
+    echo "PROVE FAIL: workflow must name the absorption-doc step so deletion is visible in review" >&2
+    return 1
+  fi
+  if ! grep -q 'No leftover may ask to upstream' "${wf_abs}"; then
+    echo "PROVE FAIL: workflow must grep the leftover-ask rule so a rewrite stays red" >&2
+    return 1
+  fi
+  if grep -q 'continue-on-error' "${wf_abs}"; then
+    echo "PROVE FAIL: forbid job must not continue-on-error (missing absorption doc would stay green)" >&2
+    return 1
+  fi
+  echo "PROVE OK: absorption-doc-fork-local"
+
+  echo "== proving: no-leftover-asks-to-upstream =="
+  local ask_err ask_line
+  ask_err="$(mktemp)"
+  if ! env FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" >/dev/null 2>"${ask_err}"; then
+    echo "PROVE FAIL: current absorption doc must pass leftover-ask scan" >&2
+    cat "${ask_err}" >&2
+    return 1
+  fi
+  while IFS= read -r ask_line || [[ -n "${ask_line}" ]]; do
+    if leftover_line_asks_to_upstream "${ask_line}"; then
+      echo "PROVE FAIL: absorption doc leftover-ask: ${ask_line}" >&2
+      return 1
+    fi
+  done < "${absorption}"
+  echo "PROVE OK: no-leftover-asks-to-upstream"
+
+  echo "== proving: leftover-asks-to-upstream-fails =="
+  local missing_abs_err gone_abs queue_doc queue_err ask_doc
+  missing_abs_err="$(mktemp)"
+  if env FORBID_ABSORPTION_DOC=/tmp/does-not-exist-spdd-upstream-absorption.md \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${missing_abs_err}"; then
+    echo "PROVE FAIL: missing absorption doc expected a red assertion" >&2
+    cat "${missing_abs_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN: missing absorption doc' "${missing_abs_err}"; then
+    echo "PROVE FAIL: missing absorption doc must print FORBIDDEN about missing absorption doc" >&2
+    cat "${missing_abs_err}" >&2
+    return 1
+  fi
+  gone_abs="$(mktemp -d)/spdd-upstream-absorption.md"
+  expect_fail "deleted absorption doc" \
+    env FORBID_ABSORPTION_DOC="${gone_abs}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+
+  queue_doc="$(mktemp)"
+  cat >"${queue_doc}" <<'EOF'
+# Contribution queue for Embabel
+Open an Embabel PR with these leftovers.
+Should we upstream this leftover?
+EOF
+  queue_err="$(mktemp)"
+  if env FORBID_ABSORPTION_DOC="${queue_doc}" FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" >/dev/null 2>"${queue_err}"; then
+    echo "PROVE FAIL: contribution-queue rewrite expected a red assertion" >&2
+    cat "${queue_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'contribution queue' "${queue_err}"; then
+    echo "PROVE FAIL: contribution-queue rewrite must mention contribution queue" >&2
+    cat "${queue_err}" >&2
+    return 1
+  fi
+
+  ask_doc="$(mktemp)"
+  cat >"${ask_doc}" <<'EOF'
+# SPDD / context-graph fork posture (not an Embabel contribution queue)
+This document is fork-local.
+No leftover may ask to upstream.
+Should we upstream this leftover anyway?
+EOF
+  expect_fail "sabotaged leftover ask" \
+    env FORBID_ABSORPTION_DOC="${ask_doc}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+  echo "PROVE OK: leftover-asks-to-upstream-fails"
 
   echo "forbid-embabel-upstream: self-test ok"
 }

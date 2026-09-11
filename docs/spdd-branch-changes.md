@@ -125,7 +125,8 @@ See **`docs/spdd-upstream-absorption.md`**. Short version:
 | `embabel/guide` | Fetch/merge **in** only — push/PR **out** forbidden |
 
 Guards: `.cursor/rules/no-embabel-upstream.mdc`,
-`scripts/forbid-embabel-upstream.sh` (`--fix` keeps Embabel fetch; push `DISABLED`),
+`scripts/forbid-embabel-upstream.sh` (`--fix` keeps Embabel fetch; push `DISABLED`;
+absorption doc is fork-local — no leftover may ask to upstream),
 CI workflow.
 
 Orchestrator research lives under Work ID

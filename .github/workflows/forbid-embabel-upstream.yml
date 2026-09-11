@@ -30,6 +30,15 @@ jobs:
           awk 'BEGIN{p=0} /^---[[:space:]]*$/{p++; next} p==1{print}' \
             .cursor/rules/no-embabel-upstream.mdc \
             | grep -qE '^[[:space:]]*alwaysApply:[[:space:]]*true[[:space:]]*$'
+      - name: Absorption doc is fork-local (not a contribution queue)
+        run: |
+          # Leftover #6: posture doc is fork-local, not a contribution queue.
+          # No leftover may ask to upstream. Missing/rewritten doc is CI-red.
+          chmod +x scripts/forbid-embabel-upstream.sh
+          test -f docs/spdd-upstream-absorption.md
+          grep -q 'not an Embabel contribution queue' docs/spdd-upstream-absorption.md
+          grep -q 'fork-local' docs/spdd-upstream-absorption.md
+          grep -q 'No leftover may ask to upstream' docs/spdd-upstream-absorption.md
       - name: Prove default/push URL embabel/guide fails
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh

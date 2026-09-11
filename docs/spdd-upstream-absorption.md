@@ -9,6 +9,9 @@ Paired research: orchestrator Work ID
 
 **Never ask Embabel to merge.** Never open a PR/MR against `embabel/guide`.
 
+This document is **fork-local**; not a contribution queue.
+**No leftover may ask to upstream.**
+
 **Durable home:** SPDD/dogfood Guide work lives on standalone
 **[`jmjava/orch-guide`](https://github.com/jmjava/orch-guide)**.
 `jmjava/guide` stays an Embabel fork whose Cloud Agent env **bridges** to
@@ -83,5 +86,6 @@ git remote add upstream https://github.com/embabel/guide.git   # if missing
 
 - Do not open PRs to `embabel/guide` (small or large).
 - Do not ask humans “should we upstream this?”
+- No leftover may ask to upstream.
 - Do not force SPDD conventions into Embabel defaults via contribution.
 - Do not collapse this work into local-LLM / embedding-format experiments.
