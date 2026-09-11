@@ -15,6 +15,7 @@
 # tests). FORBID_GH_DEFAULT overrides the resolved gh nameWithOwner (tests).
 # FORBID_CURSOR_RULE overrides the Cursor rule path (tests).
 # FORBID_ABSORPTION_DOC overrides the absorption-doc path (tests).
+# FORBID_CLOUD_AGENT_ENV overrides the cloud-agent-env path (tests).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -53,7 +54,8 @@ Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>
              cursor-rule-alwaysApply, deleting the rule keeps the job red,
              dropping alwaysApply keeps the job red,
              absorption-doc-fork-local, no-leftover-asks-to-upstream,
-             leftover-asks-to-upstream-fails.
+             leftover-asks-to-upstream-fails,
+             cloud-agent-env-fork-local, do-not-pr-embabel.
 EOF
 }
 
@@ -192,6 +194,40 @@ check_absorption_doc_fork_local() {
   done < "${absorption_doc}"
 }
 
+# Leftover #7: Cloud-agent env notes stay on this fork.
+# Do not PR Embabel. Deleting or rewriting the notes as an Embabel PR
+# must fail-closed (CI red). FORBID_CLOUD_AGENT_ENV overrides the path (tests).
+check_cloud_agent_env_fork_local() {
+  local env_doc="${FORBID_CLOUD_AGENT_ENV:-${SCRIPT_ROOT}/docs/cloud-agent-env.md}"
+  if [[ ! -f "${env_doc}" ]]; then
+    echo "FORBIDDEN: missing cloud-agent env notes ${env_doc}" >&2
+    echo "docs/cloud-agent-env.md is fork-local. Cloud-agent env notes stay on this fork." >&2
+    echo "Do not PR Embabel. Deleting it must stay visible (CI red)." >&2
+    failures=1
+    return 0
+  fi
+  if ! grep -q 'Cloud-agent env notes stay on this fork' "${env_doc}"; then
+    echo "FORBIDDEN: ${env_doc} must say Cloud-agent env notes stay on this fork." >&2
+    failures=1
+  fi
+  if ! grep -q 'fork-local' "${env_doc}"; then
+    echo "FORBIDDEN: ${env_doc} must declare it is fork-local." >&2
+    failures=1
+  fi
+  if ! grep -q 'Do not PR Embabel' "${env_doc}"; then
+    echo "FORBIDDEN: ${env_doc} must say Do not PR Embabel." >&2
+    failures=1
+  fi
+  local line
+  while IFS= read -r line || [[ -n "${line}" ]]; do
+    if leftover_line_asks_to_upstream "${line}"; then
+      echo "FORBIDDEN: leftover may not ask to PR Embabel: ${line}" >&2
+      echo "Do not PR Embabel. Cloud-agent env notes stay on this fork." >&2
+      failures=1
+    fi
+  done < "${env_doc}"
+}
+
 apply_fix() {
   local name
   while read -r name; do
@@ -245,6 +281,7 @@ run_checks() {
 
   check_cursor_rule_always_apply
   check_absorption_doc_fork_local
+  check_cloud_agent_env_fork_local
 
   if (( failures )); then
     return 1
@@ -542,6 +579,104 @@ EOF
   expect_fail "sabotaged leftover ask" \
     env FORBID_ABSORPTION_DOC="${ask_doc}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
   echo "PROVE OK: leftover-asks-to-upstream-fails"
+
+  # Leftover #7: Cloud-agent env notes stay on this fork. Do not PR Embabel.
+  # Missing/rewritten notes must stay CI-red.
+  echo "== proving: cloud-agent-env-fork-local =="
+  local env_doc wf_env
+  env_doc="${SCRIPT_ROOT}/docs/cloud-agent-env.md"
+  wf_env="${SCRIPT_ROOT}/.github/workflows/forbid-embabel-upstream.yml"
+  [[ -f "${env_doc}" ]] || {
+    echo "PROVE FAIL: missing ${env_doc}" >&2
+    return 1
+  }
+  if ! grep -q 'Cloud-agent env notes stay on this fork' "${env_doc}"; then
+    echo "PROVE FAIL: cloud-agent env notes must say they stay on this fork" >&2
+    return 1
+  fi
+  if ! grep -q 'fork-local' "${env_doc}"; then
+    echo "PROVE FAIL: cloud-agent env notes must declare they are fork-local" >&2
+    return 1
+  fi
+  if ! grep -q 'Do not PR Embabel' "${env_doc}"; then
+    echo "PROVE FAIL: cloud-agent env notes must say Do not PR Embabel" >&2
+    return 1
+  fi
+  if ! grep -q 'check_cloud_agent_env_fork_local' "${script}"; then
+    echo "PROVE FAIL: forbid script must check the cloud-agent env notes (mechanical guard)" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBID_CLOUD_AGENT_ENV' "${script}"; then
+    echo "PROVE FAIL: forbid script must honor FORBID_CLOUD_AGENT_ENV so leftover-asks can be proven" >&2
+    return 1
+  fi
+  if ! grep -q 'Cloud-agent env notes stay on this fork' "${wf_env}"; then
+    echo "PROVE FAIL: workflow must name the cloud-agent-env step so deletion is visible in review" >&2
+    return 1
+  fi
+  if ! grep -q 'Do not PR Embabel' "${wf_env}"; then
+    echo "PROVE FAIL: workflow must grep Do not PR Embabel so a rewrite stays red" >&2
+    return 1
+  fi
+  if grep -q 'continue-on-error' "${wf_env}"; then
+    echo "PROVE FAIL: forbid job must not continue-on-error (missing env notes would stay green)" >&2
+    return 1
+  fi
+  echo "PROVE OK: cloud-agent-env-fork-local"
+
+  echo "== proving: do-not-pr-embabel =="
+  local env_ask_err env_ask_line missing_env_err gone_env pr_doc pr_err
+  env_ask_err="$(mktemp)"
+  if ! env FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" >/dev/null 2>"${env_ask_err}"; then
+    echo "PROVE FAIL: current cloud-agent env notes must pass leftover-ask scan" >&2
+    cat "${env_ask_err}" >&2
+    return 1
+  fi
+  while IFS= read -r env_ask_line || [[ -n "${env_ask_line}" ]]; do
+    if leftover_line_asks_to_upstream "${env_ask_line}"; then
+      echo "PROVE FAIL: cloud-agent env leftover-ask: ${env_ask_line}" >&2
+      return 1
+    fi
+  done < "${env_doc}"
+
+  missing_env_err="$(mktemp)"
+  if env FORBID_CLOUD_AGENT_ENV=/tmp/does-not-exist-cloud-agent-env.md \
+        FORBID_GH_DEFAULT=jmjava/orch-guide "${script}" \
+        >/dev/null 2>"${missing_env_err}"; then
+    echo "PROVE FAIL: missing cloud-agent env notes expected a red assertion" >&2
+    cat "${missing_env_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'FORBIDDEN: missing cloud-agent env notes' "${missing_env_err}"; then
+    echo "PROVE FAIL: missing env notes must print FORBIDDEN about missing cloud-agent env notes" >&2
+    cat "${missing_env_err}" >&2
+    return 1
+  fi
+  gone_env="$(mktemp -d)/cloud-agent-env.md"
+  expect_fail "deleted cloud-agent env notes" \
+    env FORBID_CLOUD_AGENT_ENV="${gone_env}" FORBID_GH_DEFAULT=jmjava/orch-guide "${script}"
+
+  pr_doc="$(mktemp)"
+  cat >"${pr_doc}" <<'EOF'
+# Cloud Agent env notes
+This document is fork-local.
+Cloud-agent env notes stay on this fork.
+Do not PR Embabel.
+Should we open an Embabel PR with these env notes anyway?
+EOF
+  pr_err="$(mktemp)"
+  if env FORBID_CLOUD_AGENT_ENV="${pr_doc}" FORBID_GH_DEFAULT=jmjava/orch-guide \
+        "${script}" >/dev/null 2>"${pr_err}"; then
+    echo "PROVE FAIL: Embabel-PR rewrite expected a red assertion" >&2
+    cat "${pr_err}" >&2
+    return 1
+  fi
+  if ! grep -q 'Do not PR Embabel' "${pr_err}"; then
+    echo "PROVE FAIL: Embabel-PR rewrite must mention Do not PR Embabel" >&2
+    cat "${pr_err}" >&2
+    return 1
+  fi
+  echo "PROVE OK: do-not-pr-embabel"
 
   echo "forbid-embabel-upstream: self-test ok"
 }

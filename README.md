@@ -32,6 +32,9 @@ fails that job (named step **Cursor rule must stay alwaysApply**).
 The absorption doc (`docs/spdd-upstream-absorption.md`) is fork-local, not a
 contribution queue; a leftover that asks to upstream fails that job (named step
 **Absorption doc is fork-local (not a contribution queue)**).
+Cloud-agent env notes (`docs/cloud-agent-env.md`) stay on this fork; a leftover
+that asks to PR Embabel fails that job (named step
+**Cloud-agent env notes stay on this fork**).
 CI job `spdd-projection-unit` fails if projection/ingest contract tests vanish or break.
 
 Opt-in SPDD projection (`guide.spdd-projection.enabled`, default off) ingests REASONS
@@ -39,6 +42,7 @@ canvases plus `spdd/memory/lessons.jsonl` (Session/Analysis, MCP list caps,
 `spdd_getLesson`).
 
 - [Fork posture](docs/spdd-upstream-absorption.md)
+- [Cloud Agent env](docs/cloud-agent-env.md)
 - [Projection ingest](docs/spdd-projection-ingest.md)
 - [Change summary](docs/spdd-branch-changes.md)
 
