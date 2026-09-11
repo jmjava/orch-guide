@@ -4,11 +4,15 @@
 #
 # Usage:
 #   ./scripts/forbid-embabel-upstream.sh
+#   ./scripts/forbid-embabel-upstream.sh --fix
 #   ./scripts/forbid-embabel-upstream.sh --pre-push <remote-name> <remote-url>
 #   ./scripts/forbid-embabel-upstream.sh --self-test
 #
+# --fix disables push on remotes named upstream/embabel whose fetch URL is
+# embabel/guide (fetch stays; push URL becomes DISABLED). Never use
+# `git remote set-url` without --push — that would drop fetch-from-Embabel.
 # FORBID_GIT_ROOT overrides the repo the git remotes are read from (CI proving
-# tests). Does not rewrite remotes; disable an Embabel push URL by hand.
+# tests).
 set -euo pipefail
 
 SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,15 +22,19 @@ FORBIDDEN_RE='github\.com[:/]+embabel/guide(\.git)?(/*)?$'
 
 usage() {
   cat <<'EOF'
-Usage: forbid-embabel-upstream.sh [--pre-push <remote-name> <remote-url>]
+Usage: forbid-embabel-upstream.sh [--fix] [--pre-push <remote-name> <remote-url>]
        forbid-embabel-upstream.sh --self-test
 
   (default)  Fail if any remote can push to embabel/guide, or if
              GITHUB_REPOSITORY is embabel/guide.
+  --fix
+             Disable push on remotes named upstream/embabel whose fetch
+             URL is embabel/guide. Fetch stays; push URL becomes DISABLED.
   --pre-push
              Also fail if the hook destination URL is embabel/guide.
   --self-test
-             Proving cases: default-push-url-fails, pre-push-url-fails.
+             Proving cases: default-push-url-fails, pre-push-url-fails,
+             fix-keeps-fetch, fix-disables-push.
 EOF
 }
 
@@ -39,6 +47,29 @@ check_url() {
     echo "jmjava/orch-guide is fork-only. Fetch upstream read-only; never push/PR there." >&2
     failures=1
   fi
+}
+
+disable_fetch_only_push() {
+  local name="$1"
+  local fetch_url push_url
+  fetch_url="$(git -C "$ROOT" remote get-url "${name}" 2>/dev/null || true)"
+  [[ -z "${fetch_url}" ]] && return 0
+  [[ "${fetch_url}" =~ ${FORBIDDEN_RE} ]] || return 0
+  push_url="$(git -C "$ROOT" remote get-url --push "${name}" 2>/dev/null || true)"
+  if [[ -n "${push_url}" && "${push_url}" =~ ${FORBIDDEN_RE} ]]; then
+    git -C "$ROOT" remote set-url --push "${name}" DISABLED
+    echo "Disabled push URL for remote '${name}' (fetch remains ${fetch_url})" >&2
+  fi
+}
+
+apply_fix() {
+  local name
+  while read -r name; do
+    [[ -z "${name}" ]] && continue
+    if [[ "${name}" == "upstream" || "${name}" == "embabel" ]]; then
+      disable_fetch_only_push "${name}"
+    fi
+  done < <(git -C "$ROOT" remote 2>/dev/null || true)
 }
 
 run_checks() {
@@ -55,7 +86,8 @@ run_checks() {
     if [[ "${name}" == "upstream" || "${name}" == "embabel" ]]; then
       if [[ -n "${push_url}" && "${push_url}" == "${fetch_url}" && "${fetch_url}" =~ ${FORBIDDEN_RE} ]]; then
         echo "FORBIDDEN: remote '${name}' can push to embabel/guide (push URL equals fetch URL)." >&2
-        echo "Fix: git remote set-url --push ${name} DISABLED" >&2
+        echo "Fix: ./scripts/forbid-embabel-upstream.sh --fix" >&2
+        echo "  or: git remote set-url --push ${name} DISABLED" >&2
         failures=1
       fi
     else
@@ -114,10 +146,43 @@ self_test() {
   expect_fail "pre-push-url-fails" \
     "${script}" --pre-push evil https://github.com/embabel/guide.git
 
+  echo "== proving: fix-keeps-fetch / fix-disables-push =="
+  env FORBID_GIT_ROOT="${tmp}" "${script}" --fix
+  local fetch_url push_url
+  fetch_url="$(git -C "${tmp}" remote get-url upstream)"
+  push_url="$(git -C "${tmp}" remote get-url --push upstream)"
+  case "${fetch_url}" in
+    *embabel/guide*)
+      echo "PROVE OK: fix-keeps-fetch"
+      ;;
+    *)
+      echo "PROVE FAIL: fix-keeps-fetch expected fetch to stay embabel/guide, got: ${fetch_url}" >&2
+      return 1
+      ;;
+  esac
+  if [[ "${push_url}" != "DISABLED" ]]; then
+    echo "PROVE FAIL: fix-disables-push expected DISABLED, got: ${push_url}" >&2
+    return 1
+  fi
+  echo "PROVE OK: fix-disables-push"
+  env FORBID_GIT_ROOT="${tmp}" "${script}"
+
   echo "forbid-embabel-upstream: self-test ok"
 }
 
 main() {
+  local fix=0
+  local filtered=()
+  local arg
+  for arg in "$@"; do
+    if [[ "${arg}" == "--fix" ]]; then
+      fix=1
+    else
+      filtered+=("${arg}")
+    fi
+  done
+  set -- "${filtered[@]+"${filtered[@]}"}"
+
   case "${1:-}" in
     -h|--help)
       usage
@@ -126,6 +191,9 @@ main() {
       self_test
       ;;
     --pre-push|"")
+      if (( fix )); then
+        apply_fix
+      fi
       run_checks "$@"
       ;;
     *)

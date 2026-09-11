@@ -29,7 +29,7 @@ Enforcement (both repos):
 | Layer | Mechanism |
 |-------|-----------|
 | Agent | `.cursor/rules/no-embabel-upstream.mdc` (`alwaysApply`) |
-| Git | `scripts/forbid-embabel-upstream.sh` + `scripts/install-git-hooks.sh` |
+| Git | `scripts/forbid-embabel-upstream.sh` (`--fix` keeps fetch-from-Embabel; push becomes `DISABLED`) + `scripts/install-git-hooks.sh` |
 | CI | `.github/workflows/forbid-embabel-upstream.yml` |
 
 ## Current posture (2026-09-10)
@@ -75,8 +75,8 @@ env files stay fork-local (real env on orch-guide; thin bridge on `jmjava/guide`
 # one-time per clone
 ./scripts/install-git-hooks.sh
 git remote add upstream https://github.com/embabel/guide.git   # if missing
-git remote set-url --push upstream DISABLED
-./scripts/forbid-embabel-upstream.sh
+./scripts/forbid-embabel-upstream.sh --fix
+# install-git-hooks.sh already runs --fix; safe to repeat
 ```
 
 ## Explicit non-goals

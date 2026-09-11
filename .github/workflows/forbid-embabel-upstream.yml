@@ -33,3 +33,21 @@ jobs:
             exit 1
           fi
           echo "default-push-url-fails OK"
+
+          FORBID_GIT_ROOT="$tmp" ./scripts/forbid-embabel-upstream.sh --fix
+          FORBID_GIT_ROOT="$tmp" ./scripts/forbid-embabel-upstream.sh
+          fetch_url="$(git -C "$tmp" remote get-url upstream)"
+          push_url="$(git -C "$tmp" remote get-url --push upstream)"
+          case "$fetch_url" in
+            *embabel/guide*) ;;
+            *)
+              echo "expected fetch URL to stay embabel/guide after --fix, got: $fetch_url" >&2
+              exit 1
+              ;;
+          esac
+          echo "fix-keeps-fetch OK"
+          if [ "$push_url" != "DISABLED" ]; then
+            echo "expected push URL DISABLED after --fix, got: $push_url" >&2
+            exit 1
+          fi
+          echo "fix-disables-push OK"
