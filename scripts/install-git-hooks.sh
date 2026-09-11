@@ -17,3 +17,8 @@ chmod +x "${HOOKS_DIR}/pre-push" "${ROOT}/scripts/forbid-embabel-upstream.sh"
 
 git -C "${ROOT}" config core.hooksPath .githooks
 echo "Installed core.hooksPath=.githooks (pre-push → forbid-embabel-upstream)"
+
+# Same harden Cloud Agent install.sh already does: fetch Embabel, never push.
+if [[ -x "${ROOT}/scripts/forbid-embabel-upstream.sh" ]]; then
+  bash "${ROOT}/scripts/forbid-embabel-upstream.sh" --fix
+fi

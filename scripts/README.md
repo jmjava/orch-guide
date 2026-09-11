@@ -7,7 +7,7 @@
 | `run-mcp-guide-against-hub.sh` | Run Guide on **`$GUIDE_PORT`** (default **1337**) for MCP at **`/sse`**, using the **same external Bolt defaults** as **`USE_EMBABEL_HUB_NEO4J=1`** in `append-ingest.sh` (self-contained script; no extra `lib/`). |
 | `shell.sh` | Runs the application in interactive shell mode. |
 | `assert-spdd-projection-pin.sh` | Fail-closed check that `refs/tags/spdd-projection-v3` exists and peels to the SHA in `spdd-projection-pin.env`. `--self-test` proves missing-tag and wrong-SHA go red. Does not retag. |
-| `forbid-embabel-upstream.sh` | Fail-closed check that no remote can push to `embabel/guide`. `--self-test` proves `default-push-url-fails` and `pre-push-url-fails`. `FORBID_GIT_ROOT` points the remote scan at a throwaway repo. |
+| `forbid-embabel-upstream.sh` | Fail-closed check that no remote can push to `embabel/guide`. `--fix` keeps fetch-from-Embabel and sets push to `DISABLED`. `--self-test` proves `default-push-url-fails`, `pre-push-url-fails`, `fix-keeps-fetch`, and `fix-disables-push`. `FORBID_GIT_ROOT` points the remote scan at a throwaway repo. |
 
 Both ingestion scripts load your personal profile and run Guide with reload-on-startup. Watch application logs for ingestion progress. If **`ANTHROPIC_API_KEY`** is not set, `append-ingest.sh` exports a **`dummy-key`** placeholder so Spring starts (Anthropic autoconfigure requires the variable; ingestion embeddings use local ONNX). Put a real key in `.env` when you use Claude.
 
