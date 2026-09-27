@@ -7,6 +7,7 @@ import com.embabel.guide.ContentConfig
 import com.embabel.guide.GuideProperties
 import com.embabel.guide.VersionedContentConfig
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -135,6 +136,13 @@ class SpddProjectionControllerTest {
       .andExpect(jsonPath("$.label").value("WorkId"))
       .andExpect(jsonPath("$.count").value(1))
       .andExpect(jsonPath("$.items[0].id").value("SPIKE-FIX-001-retrieval-fixture"))
+  }
+
+  @Test
+  fun `by-label returns 400 for a blank label`() {
+    mockMvc.perform(get("/api/v1/data/spdd-projection/by-label").param("label", "   "))
+      .andExpect(status().isBadRequest)
+      .andExpect(jsonPath("$.error").value(containsString("Unknown entity label")))
   }
 
   private fun buildProject(root: Path): Path {
