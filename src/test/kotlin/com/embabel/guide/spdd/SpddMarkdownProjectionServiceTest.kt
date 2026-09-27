@@ -322,6 +322,31 @@ class SpddMarkdownProjectionServiceTest {
     assertEquals(1, result.decisions)
   }
 
+  @Test
+  fun `load projects a blank-area lesson without creating an Area`() {
+    val root = buildProject(
+      tempDir.resolve("blank-area"),
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {"id":"decision:SPIKE-FIX-001-retrieval-fixture::adr.md","kind":"decision","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"   ","title":"no area","body":"still a decision","source":"adr.md","schema":1}
+      """.trimIndent(),
+    )
+    val repo = inMemoryRepository()
+    val service = service(repo, root.toString())
+
+    val result = service.load()
+
+    assertEquals(1, result.decisions)
+    assertEquals(0, result.areas)
+    assertTrue(repo.findByLabel("Area").isEmpty())
+    val lesson = service.getLesson("decision:SPIKE-FIX-001-retrieval-fixture::adr.md")
+    assertNotNull(lesson)
+    assertEquals("(none)", lesson!!.area)
+    val subgraph = service.subgraphForWorkId("SPIKE-FIX-001-retrieval-fixture")
+    assertEquals(listOf("no area"), subgraph.decisions.map { it.name })
+    assertTrue(subgraph.areas.isEmpty())
+  }
+
   // ---------------------------------------------------------------- helpers
 
   private fun service(
