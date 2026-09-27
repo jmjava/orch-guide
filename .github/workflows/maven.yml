@@ -30,6 +30,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # A missing or empty jacoco.xml must fail this job.
+      # Sabotaging continue-on-error or the XML scan must make this step fail.
+      - name: Prove JaCoCo report gate
+        run: |
+          chmod +x scripts/jacoco-report-assert.sh
+          ./scripts/jacoco-report-assert.sh
+
       - name: Set up JDK ${{ matrix.java }}
         uses: actions/setup-java@v4
         with:
@@ -59,11 +66,15 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_DUMMY_KEY }}
         run: mvn -U -B test
 
-      # Generate JaCoCo coverage report
+      # Generate JaCoCo coverage report. A failed report fails the job.
       - name: Generate Coverage Report
         if: always()
         run: mvn -U -B jacoco:report
-        continue-on-error: true
+
+      # Missing or empty jacoco.xml stays red even when jacoco:report exits 0.
+      - name: Fail closed on missing JaCoCo report
+        if: always()
+        run: ./scripts/jacoco-report-assert.sh --check-report target/site/jacoco/jacoco.xml
 
       # Publish test results as check run annotations.
       # Only from the 25 leg - two legs would race to create the same check run.
