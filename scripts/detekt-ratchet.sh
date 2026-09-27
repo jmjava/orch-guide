@@ -20,8 +20,8 @@ for arg in "$@"; do
 done
 
 MODE="${1:-}"
-if [[ "$MODE" != "cayc" && "$MODE" != "baseline" ]]; then
-  echo "usage: $0 cayc|baseline" >&2
+if [[ "$MODE" != "cayc" && "$MODE" != "baseline" && "$MODE" != "fetch" ]]; then
+  echo "usage: $0 cayc|baseline|fetch" >&2
   exit 2
 fi
 
@@ -34,6 +34,18 @@ BASELINE="${RATCHET_BASELINE:-${ROOT}/config/detekt/baseline.xml}"
 BASE_REF="${RATCHET_BASE:-origin/main}"
 REPORT="${ROOT}/target/detekt-${MODE}.xml"
 
+mkdir -p "$CACHE"
+if [[ ! -f "$JAR" ]]; then
+  tmp="$(mktemp)"
+  curl -fsSL -o "$tmp" "$URL"
+  echo "${SHA}  ${tmp}" | sha256sum -c -
+  mv "$tmp" "$JAR"
+fi
+if [[ "$MODE" == "fetch" ]]; then
+  echo "detekt cli ready: ${JAR}"
+  exit 0
+fi
+
 if [[ ! -f "$BASELINE" ]]; then
   echo "missing detekt baseline: ${BASELINE}" >&2
   exit 1
@@ -42,14 +54,6 @@ fi
 if ! git rev-parse --verify --quiet "$BASE_REF" >/dev/null; then
   echo "${BASE_REF} is required" >&2
   exit 1
-fi
-
-mkdir -p "$CACHE"
-if [[ ! -f "$JAR" ]]; then
-  tmp="$(mktemp)"
-  curl -fsSL -o "$tmp" "$URL"
-  echo "${SHA}  ${tmp}" | sha256sum -c -
-  mv "$tmp" "$JAR"
 fi
 
 print_old_findings() {

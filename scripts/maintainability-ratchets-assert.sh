@@ -119,6 +119,7 @@ EOF
 git -C "$fixture" add src
 git -C "$fixture" commit -q -m "base"
 git -C "$fixture" update-ref refs/remotes/origin/main HEAD
+expect_ok "fetch detekt cli" "$DETEKT" fetch
 jar="${XDG_CACHE_HOME:-$HOME/.cache}/detekt/detekt-cli-2.0.0-alpha.3-all.jar"
 [[ -f "$jar" ]] || fail "detekt cli jar is required to prove the line gate"
 java -jar "$jar" \
