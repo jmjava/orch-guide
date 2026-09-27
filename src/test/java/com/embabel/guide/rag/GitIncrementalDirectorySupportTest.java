@@ -42,6 +42,29 @@ class GitIncrementalDirectorySupportTest {
     }
 
     @Test
+    void changedPathsBetweenOmitsPureDeletes() throws Exception {
+        Assumptions.assumeTrue(gitAvailable(), "git must be on PATH");
+
+        run(repo, "git", "init");
+        run(repo, "git", "config", "user.email", "test@test.local");
+        run(repo, "git", "config", "user.name", "Test");
+        Files.writeString(repo.resolve("keep.txt"), "v1", StandardCharsets.UTF_8);
+        Files.writeString(repo.resolve("gone.txt"), "v1", StandardCharsets.UTF_8);
+        run(repo, "git", "add", "keep.txt", "gone.txt");
+        run(repo, "git", "commit", "-m", "first");
+        String first = GitIncrementalDirectorySupport.headCommit(repo).orElseThrow();
+
+        Files.delete(repo.resolve("gone.txt"));
+        Files.writeString(repo.resolve("added.txt"), "new", StandardCharsets.UTF_8);
+        run(repo, "git", "add", "-A");
+        run(repo, "git", "commit", "-m", "delete and add");
+        String second = GitIncrementalDirectorySupport.headCommit(repo).orElseThrow();
+
+        List<String> changed = GitIncrementalDirectorySupport.changedPathsBetween(repo, first, second);
+        assertThat(changed).containsExactly("added.txt");
+    }
+
+    @Test
     void findGitWorkTreeRootWalksUpFromSubdirectory() throws Exception {
         Assumptions.assumeTrue(gitAvailable(), "git must be on PATH");
 
