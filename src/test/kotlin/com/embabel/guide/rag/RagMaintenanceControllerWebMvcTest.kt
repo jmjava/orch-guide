@@ -2,6 +2,7 @@ package com.embabel.guide.rag
 
 import com.embabel.hub.JwtTokenService
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -70,5 +71,23 @@ class RagMaintenanceControllerWebMvcTest {
                 .content(body),
         )
             .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `git revision reset returns 500 when the revision file cannot be saved`() {
+        `when`(maintenanceService.resetGitIngestionRevision("/srv/repo"))
+            .thenThrow(java.io.IOException("disk full"))
+
+        val body = objectMapper.writeValueAsString(mapOf("directory" to "/srv/repo"))
+
+        mockMvc.perform(
+            post("/api/v1/data/git-ingestion/revision/reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body),
+        )
+            .andExpect(status().isInternalServerError)
+            .andExpect(jsonPath("$.absolutePath").value(nullValue()))
+            .andExpect(jsonPath("$.removed").value(false))
+            .andExpect(jsonPath("$.message").value("Failed to save revision file: disk full"))
     }
 }
