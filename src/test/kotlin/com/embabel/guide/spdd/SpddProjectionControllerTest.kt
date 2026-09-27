@@ -7,6 +7,7 @@ import com.embabel.guide.ContentConfig
 import com.embabel.guide.GuideProperties
 import com.embabel.guide.VersionedContentConfig
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -85,6 +86,13 @@ class SpddProjectionControllerTest {
   fun `work subgraph returns 404 for unknown work id`() {
     mockMvc.perform(get("/api/v1/data/spdd-projection/work/FEAT-999-unknown"))
       .andExpect(status().isNotFound)
+  }
+
+  @Test
+  fun `work subgraph returns 400 for a blank work id`() {
+    mockMvc.perform(get("/api/v1/data/spdd-projection/work/{workId}", "   "))
+      .andExpect(status().isBadRequest)
+      .andExpect(jsonPath("$.error").value(containsString("workId must not be blank")))
   }
 
   @Test
