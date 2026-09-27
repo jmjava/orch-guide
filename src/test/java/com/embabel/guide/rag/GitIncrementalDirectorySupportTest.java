@@ -60,6 +60,21 @@ class GitIncrementalDirectorySupportTest {
     }
 
     @Test
+    void findGitWorkTreeRootStopsAtLinkedWorktreeGitFile() throws Exception {
+        Files.createDirectories(repo.resolve(".git"));
+        Path linked = repo.resolve("linked");
+        Files.createDirectories(linked);
+        Files.writeString(
+                linked.resolve(".git"),
+                "gitdir: /main/.git/worktrees/linked\n",
+                StandardCharsets.UTF_8);
+
+        assertThat(GitIncrementalDirectorySupport.isGitWorkTree(linked)).isTrue();
+        assertThat(GitIncrementalDirectorySupport.findGitWorkTreeRoot(linked.resolve("spdd/canvas")))
+                .contains(linked.toAbsolutePath().normalize());
+    }
+
+    @Test
     void filterPathsUnderDirectoryScopesRepoDiffToConfiguredSubdir() {
         Path root = Path.of("/repo").toAbsolutePath().normalize();
         Path canvas = root.resolve("spdd/canvas");
