@@ -7,6 +7,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -73,6 +74,21 @@ class GitIncrementalDirectorySupportTest {
                 .containsExactly("spdd/canvas/FEAT-001.md", "spdd/canvas/extra/nested.md");
         assertThat(GitIncrementalDirectorySupport.filterPathsUnderDirectory(root, root, changed))
                 .containsExactlyElementsOf(changed);
+    }
+
+    @Test
+    void filterPathsUnderDirectoryOmitsBlankAndNullEntries() {
+        Path root = Path.of("/repo").toAbsolutePath().normalize();
+        Path canvas = root.resolve("spdd/canvas");
+        List<String> changed = new ArrayList<>();
+        changed.add("  ");
+        changed.add(null);
+        changed.add("");
+        changed.add("spdd/canvas/FEAT-001.md");
+        changed.add("README.md");
+
+        assertThat(GitIncrementalDirectorySupport.filterPathsUnderDirectory(root, canvas, changed))
+                .containsExactly("spdd/canvas/FEAT-001.md");
     }
 
     private static boolean gitAvailable() throws Exception {
