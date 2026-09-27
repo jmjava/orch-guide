@@ -3,6 +3,7 @@ package com.embabel.guide.rag
 import com.embabel.hub.JwtTokenService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -70,5 +71,21 @@ class RagMaintenanceControllerWebMvcTest {
                 .content(body),
         )
             .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `git revision reset rejects a blank directory without touching the store`() {
+        val body = objectMapper.writeValueAsString(mapOf("directory" to "   "))
+
+        mockMvc.perform(
+            post("/api/v1/data/git-ingestion/revision/reset")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.removed").value(false))
+            .andExpect(jsonPath("$.message").value("directory is required"))
+
+        verifyNoInteractions(maintenanceService)
     }
 }
