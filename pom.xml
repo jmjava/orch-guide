@@ -24,6 +24,8 @@
         <embabel-agent.version>1.0.0-RC1-SNAPSHOT</embabel-agent.version>
         <spring-ai.version>1.1.1</spring-ai.version>
         <kotlin.version>2.3.21</kotlin.version>
+        <pitest.version>1.19.4</pitest.version>
+        <pitest-junit5.version>1.2.3</pitest-junit5.version>
     </properties>
 
     <dependencies>
@@ -408,5 +410,48 @@
             </snapshots>
         </repository>
     </repositories>
+
+    <!-- PIT is not part of the default test run.
+         The mutation job runs: ./mvnw -B -Ppit test-compile pitest:mutationCoverage -->
+    <profiles>
+        <profile>
+            <id>pit</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>${pitest-junit5.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>com.embabel.guide.rag.IngestionResult</param>
+                                <param>com.embabel.guide.rag.IngestionFailure</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>com.embabel.guide.rag.IngestionResultTest</param>
+                                <param>com.embabel.guide.rag.IngestionFailureTest</param>
+                            </targetTests>
+                            <excludedMethods>
+                                <param>equals</param>
+                                <param>hashCode</param>
+                                <param>toString</param>
+                            </excludedMethods>
+                            <failWhenNoMutations>true</failWhenNoMutations>
+                            <mutationThreshold>100</mutationThreshold>
+                            <timestampedReports>false</timestampedReports>
+                            <threads>2</threads>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

@@ -1,0 +1,206 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:ChatActions.kt:ChatActions$@Action(canRerun = true, trigger = UserMessage::class) fun respond</ID>
+    <ID>CyclomaticComplexMethod:ChatActions.kt:ChatActions.Companion$fun userFacingErrorDetail: String</ID>
+    <ID>CyclomaticComplexMethod:SpddMarkdownProjectionService.kt:SpddMarkdownProjectionService$private fun projectLessonsLedger: PartialResult</ID>
+    <ID>LargeClass:HubApiControllerTest.kt:HubApiControllerTest</ID>
+    <ID>LongMethod:ChatActions.kt:ChatActions$@Action(canRerun = true, trigger = UserMessage::class) fun respond</ID>
+    <ID>LongMethod:SpddMarkdownProjectionService.kt:SpddMarkdownProjectionService$fun load: SpddProjectionResult</ID>
+    <ID>LongMethod:SpddMarkdownProjectionService.kt:SpddMarkdownProjectionService$private fun projectLessonsLedger: PartialResult</ID>
+    <ID>LoopWithTooManyJumpStatements:PersonaSeedingService.kt:PersonaSeedingService$for</ID>
+    <ID>MagicNumber:AnonymousPrincipalHandshakeHandler.kt:AnonymousPrincipalHandshakeHandler$7</ID>
+    <ID>MagicNumber:AsyncConfig.kt:AsyncConfig$100</ID>
+    <ID>MagicNumber:AsyncConfig.kt:AsyncConfig$5</ID>
+    <ID>MagicNumber:ChatActions.kt:ChatActions$100</ID>
+    <ID>MagicNumber:ChatActions.kt:ChatActions$4</ID>
+    <ID>MagicNumber:ChatActions.kt:ChatActions$80</ID>
+    <ID>MagicNumber:ChatStoreConfig.kt:ChatStoreConfig$80</ID>
+    <ID>MagicNumber:DeepgramProxyController.kt:DeepgramProxyController$401</ID>
+    <ID>MagicNumber:DeepgramProxyController.kt:DeepgramProxyController$500</ID>
+    <ID>MagicNumber:EmailService.kt:EmailService$200</ID>
+    <ID>MagicNumber:EmailService.kt:EmailService$299</ID>
+    <ID>MagicNumber:FakeRagServiceAdapter.kt:FakeRagServiceAdapter$10</ID>
+    <ID>MagicNumber:GuideRagServiceAdapter.kt:GuideRagServiceAdapter$100</ID>
+    <ID>MagicNumber:GuideStatsService.kt:GuideStatsService$7</ID>
+    <ID>MagicNumber:HubService.kt:HubService$8</ID>
+    <ID>MagicNumber:JesseService.kt:JesseService$100</ID>
+    <ID>MagicNumber:JwtAuthenticationFilter.kt:JwtAuthenticationFilter$7</ID>
+    <ID>MagicNumber:KeyEncryptionService.kt:KeyEncryptionService$32</ID>
+    <ID>MagicNumber:OAuthLoginService.kt:OAuthLoginService$10</ID>
+    <ID>MagicNumber:OAuthLoginService.kt:OAuthLoginService$4</ID>
+    <ID>MagicNumber:PersonaService.kt:PersonaService$50</ID>
+    <ID>MagicNumber:RateLimitFilter.kt:RateLimitFilter.Companion$300</ID>
+    <ID>MagicNumber:RateLimitFilter.kt:RateLimitFilter.Companion$40</ID>
+    <ID>MaxLineLength:ChatActions.kt:ChatActions$logger.info("[NARRATION] Narration complete for conversation {}: {} chars", conversationId, narration.text.length)</ID>
+    <ID>MaxLineLength:ChatActions.kt:ChatActions$logger.info("[NARRATION] Starting narration for conversation {}, content length={}", conversationId, assistantMessage.content.length)</ID>
+    <ID>MaxLineLength:ChatStoreConfig.kt:ChatStoreConfig$val result = userModelFactory.getLlmService(provider, provider.summarizerModel, apiKey) as SpringAiLlmService</ID>
+    <ID>MaxLineLength:ChatStoreConfigTitleGeneratorTest.kt:ChatStoreConfigTitleGeneratorTest$titleGenerator.generate(listOf(userMessage("Tell me about Kotlin")), currentTitle = null, userId = internalId)</ID>
+    <ID>MaxLineLength:CommandTools.kt:CommandTools$@Tool(description = "Change the user's persona/character. Use this when the user wants to switch to a different persona.")</ID>
+    <ID>MaxLineLength:GitHubOAuthService.kt:GitHubOAuthService$?:</ID>
+    <ID>MaxLineLength:GuideProperties.kt:GuideProperties$*</ID>
+    <ID>MaxLineLength:GuidePropertiesPathResolutionTest.kt:GuidePropertiesPathResolutionTest$val absolute = File.separator + "abs" + File.separator + "path" + File.separator + ".." + File.separator + "repo"</ID>
+    <ID>MaxLineLength:GuideRagServiceAdapter.kt:GuideRagServiceAdapter$logger.info("[TRACE] sendMessage called: thread={}, user={}, message='{}'", threadId, fromUserId, message.take(100))</ID>
+    <ID>MaxLineLength:HubExceptionHandler.kt:HubExceptionHandler$fun</ID>
+    <ID>MaxLineLength:JesseService.kt:JesseService$body = "I'm sorry, I'm having trouble processing your request right now. Please try again in a moment."</ID>
+    <ID>MaxLineLength:JesseService.kt:JesseService$logger.error("[session={}] Error processing message from webUser {}: {}", effectiveSessionId, fromWebUserId, e.message, e)</ID>
+    <ID>MaxLineLength:JesseService.kt:JesseService$logger.info("[session={}] Found guideUser {} for webUser {}", effectiveSessionId, guideUserId, fromWebUserId)</ID>
+    <ID>MaxLineLength:JesseService.kt:JesseService$logger.info("[session={}] Jesse received message from webUser {}: '{}'", effectiveSessionId, fromWebUserId, message.take(100))</ID>
+    <ID>MaxLineLength:JesseService.kt:JesseService$logger.info("[session={}] RAG adapter returned response ({} chars)", effectiveSessionId, response.length)</ID>
+    <ID>MaxLineLength:KeyEncryptionService.kt:KeyEncryptionService$logger.warn("EMBABEL_KEY_SECRET not set — generating ephemeral key (encrypted blobs won't survive restart)")</ID>
+    <ID>MaxLineLength:LlmKeyException.kt:LlmKeyException.Companion$LlmKeyException(LlmKeyErrorCode.KEY_INVALID, provider, "Your API key appears to be invalid or expired.", e)</ID>
+    <ID>MaxLineLength:LlmKeyException.kt:LlmKeyException.Companion$LlmKeyException(LlmKeyErrorCode.KEY_QUOTA, provider, "The AI provider is rate-limiting requests.", e)</ID>
+    <ID>MaxLineLength:LlmKeyException.kt:LlmKeyException.Companion$LlmKeyException(LlmKeyErrorCode.KEY_QUOTA, provider, "Your API account may have run out of credits.", e)</ID>
+    <ID>MaxLineLength:MessageEventListener.kt:MessageEventListener$logger.debug("MessageEvent has no toUserId, skipping WebSocket delivery for session {}", event.conversationId)</ID>
+    <ID>MaxLineLength:MessageEventListener.kt:MessageEventListener$logger.info("[NARRATION] DeliveredMessage narration={}", if (delivered.narration != null) "${delivered.narration.length} chars" else "NULL")</ID>
+    <ID>MaxLineLength:NarrationCache.kt:NarrationCache$logger.info("[NARRATION] Cache PUT conversationId={}, length={}, cacheSize={}", conversationId, narration.length, cache.size + 1)</ID>
+    <ID>MaxLineLength:NarratorAgent.kt:NarratorAgent$content.length &lt;= SIMPLE_MAX_LENGTH &amp;&amp; !MARKDOWN_INDICATORS.containsMatchIn(content) -&gt; NarrationCategory.SIMPLE</ID>
+    <ID>MaxLineLength:NarratorAgent.kt:NarratorAgent.Companion$private</ID>
+    <ID>MaxLineLength:NarratorAgent.kt:NarratorAgent.Companion$private val MARKDOWN_INDICATORS = Regex("(^#{1,6}\\s|\\*\\*|\\*|^-\\s|^\\d+\\.\\s|^&gt;\\s|\\[.*]\\(.*\\))", RegexOption.MULTILINE)</ID>
+    <ID>MaxLineLength:PersonaIngestionService.kt:PersonaIngestionService$fun</ID>
+    <ID>MaxLineLength:PersonaIngestionService.kt:PersonaIngestionService$val text = response.result.output.text ?: return ClassifyResponse(safe = false, reason = "Empty response from LLM.")</ID>
+    <ID>MaxLineLength:PersonaService.kt:PersonaService$fun</ID>
+    <ID>MaxLineLength:SpddDomainToolsTest.kt:SpddDomainToolsTest$"""{"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:p$i.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"pitfall $i","body":"body $i","source":"p$i.md","schema":1}"""</ID>
+    <ID>MaxLineLength:SpddMarkdownProjectionServiceTest.kt:SpddMarkdownProjectionServiceTest$assertTrue(service.listByLabel("WorkId", maxResults = 999999).size &lt;= SpddMarkdownProjectionService.MAX_LIST_RESULTS)</ID>
+    <ID>MaxLineLength:TestApplicationContext.kt:Neo4jPropertiesInitializer$println("@@@ Neo4jPropertiesInitializer: useLocalNeo4j=$useLocalNeo4j, activeProfiles=${activeProfiles.joinToString(",")} @@@")</ID>
+    <ID>MaxLineLength:UserKeyStore.kt:UserKeyStore$activeProvider = if (current.activeProvider == provider) newKeys.keys.first() else current.activeProvider</ID>
+    <ID>MaxLineLength:UserLlmResolver.kt:UserLlmResolver$logger.info("Server default LLM provider: {} (explicit={})", serverProvider, guideProperties.defaultProvider != null)</ID>
+    <ID>MaxLineLength:WelcomeGreeter.kt:WelcomeGreeterImpl$logger.error("Failed to create AI welcome session for user {}, falling back to static message: {}", guideUserId, e.message, e)</ID>
+    <ID>MaxLineLength:WelcomeGreeter.kt:WelcomeGreeterImpl$logger.error("Failed to create fallback welcome session for user {}: {}", guideUserId, fallbackError.message, fallbackError)</ID>
+    <ID>MaxLineLength:WelcomeGreeter.kt:WelcomeGreeterImpl$val delivered = DeliveredMessage.createFrom(fallbackMessage, fallbackSession.session.sessionId, fallbackSession.session.title)</ID>
+    <ID>NewLineAtEndOfFile:AsyncConfig.kt:com.embabel.guide.chat.config.AsyncConfig.kt</ID>
+    <ID>NewLineAtEndOfFile:AudioEffect.kt:com.embabel.hub.AudioEffect.kt</ID>
+    <ID>NewLineAtEndOfFile:AuthTestController.kt:com.embabel.hub.AuthTestController.kt</ID>
+    <ID>NewLineAtEndOfFile:ChangePasswordException.kt:com.embabel.hub.ChangePasswordException.kt</ID>
+    <ID>NewLineAtEndOfFile:ChangePasswordRequest.kt:com.embabel.hub.ChangePasswordRequest.kt</ID>
+    <ID>NewLineAtEndOfFile:ChatStoreConfigTitleGeneratorTest.kt:com.embabel.guide.config.ChatStoreConfigTitleGeneratorTest.kt</ID>
+    <ID>NewLineAtEndOfFile:DeepgramProxyController.kt:com.embabel.hub.integrations.DeepgramProxyController.kt</ID>
+    <ID>NewLineAtEndOfFile:DeepgramProxyControllerTest.kt:com.embabel.hub.integrations.DeepgramProxyControllerTest.kt</ID>
+    <ID>NewLineAtEndOfFile:FallbackContentFetcher.kt:com.embabel.guide.rag.FallbackContentFetcher.kt</ID>
+    <ID>NewLineAtEndOfFile:ForbiddenException.kt:com.embabel.hub.ForbiddenException.kt</ID>
+    <ID>NewLineAtEndOfFile:GuideStats.kt:com.embabel.guide.stats.GuideStats.kt</ID>
+    <ID>NewLineAtEndOfFile:GuideStatsService.kt:com.embabel.guide.stats.GuideStatsService.kt</ID>
+    <ID>NewLineAtEndOfFile:GuideUserCache.kt:com.embabel.guide.domain.GuideUserCache.kt</ID>
+    <ID>NewLineAtEndOfFile:GuideUserRepository.kt:com.embabel.guide.domain.GuideUserRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:GuideUserServiceTest.kt:com.embabel.guide.domain.GuideUserServiceTest.kt</ID>
+    <ID>NewLineAtEndOfFile:HubExceptionHandler.kt:com.embabel.hub.HubExceptionHandler.kt</ID>
+    <ID>NewLineAtEndOfFile:IntegrationsController.kt:com.embabel.hub.integrations.IntegrationsController.kt</ID>
+    <ID>NewLineAtEndOfFile:JwtAuthenticationFilter.kt:com.embabel.hub.JwtAuthenticationFilter.kt</ID>
+    <ID>NewLineAtEndOfFile:JwtTokenService.kt:com.embabel.hub.JwtTokenService.kt</ID>
+    <ID>NewLineAtEndOfFile:KeyEncryptionService.kt:com.embabel.hub.integrations.KeyEncryptionService.kt</ID>
+    <ID>NewLineAtEndOfFile:KeyEncryptionServiceTest.kt:com.embabel.hub.integrations.KeyEncryptionServiceTest.kt</ID>
+    <ID>NewLineAtEndOfFile:KeyValidationEndpointTest.kt:com.embabel.hub.integrations.KeyValidationEndpointTest.kt</ID>
+    <ID>NewLineAtEndOfFile:LlmKeyError.kt:com.embabel.guide.chat.model.LlmKeyError.kt</ID>
+    <ID>NewLineAtEndOfFile:LlmKeyException.kt:com.embabel.hub.integrations.LlmKeyException.kt</ID>
+    <ID>NewLineAtEndOfFile:LlmRole.kt:com.embabel.hub.integrations.LlmRole.kt</ID>
+    <ID>NewLineAtEndOfFile:LoginException.kt:com.embabel.hub.LoginException.kt</ID>
+    <ID>NewLineAtEndOfFile:LoginResponse.kt:com.embabel.hub.LoginResponse.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageAck.kt:com.embabel.guide.chat.model.MessageAck.kt</ID>
+    <ID>NewLineAtEndOfFile:MessageDeliveryService.kt:com.embabel.guide.chat.service.MessageDeliveryService.kt</ID>
+    <ID>NewLineAtEndOfFile:NotFoundException.kt:com.embabel.hub.NotFoundException.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaData.kt:com.embabel.guide.domain.PersonaData.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaIngestionServiceTest.kt:com.embabel.hub.PersonaIngestionServiceTest.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaPromptCache.kt:com.embabel.hub.PersonaPromptCache.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaRepository.kt:com.embabel.guide.domain.PersonaRepository.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaRepositoryImpl.kt:com.embabel.guide.domain.PersonaRepositoryImpl.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaRepositoryImplTest.kt:com.embabel.guide.domain.drivine.PersonaRepositoryImplTest.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaSeedingService.kt:com.embabel.hub.PersonaSeedingService.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaService.kt:com.embabel.hub.PersonaService.kt</ID>
+    <ID>NewLineAtEndOfFile:PersonaView.kt:com.embabel.guide.domain.PersonaView.kt</ID>
+    <ID>NewLineAtEndOfFile:RagServiceAdapter.kt:com.embabel.guide.chat.service.RagServiceAdapter.kt</ID>
+    <ID>NewLineAtEndOfFile:RateLimitFilter.kt:com.embabel.hub.RateLimitFilter.kt</ID>
+    <ID>NewLineAtEndOfFile:RateLimitFilterTest.kt:com.embabel.hub.RateLimitFilterTest.kt</ID>
+    <ID>NewLineAtEndOfFile:RegistrationException.kt:com.embabel.hub.RegistrationException.kt</ID>
+    <ID>NewLineAtEndOfFile:RequirePrincipalInterceptor.kt:com.embabel.guide.chat.security.RequirePrincipalInterceptor.kt</ID>
+    <ID>NewLineAtEndOfFile:SetupRequiredChatModel.kt:com.embabel.hub.integrations.SetupRequiredChatModel.kt</ID>
+    <ID>NewLineAtEndOfFile:StandardErrorResponse.kt:com.embabel.hub.StandardErrorResponse.kt</ID>
+    <ID>NewLineAtEndOfFile:TestApplicationContext.kt:com.embabel.guide.TestApplicationContext.kt</ID>
+    <ID>NewLineAtEndOfFile:UnauthorizedException.kt:com.embabel.hub.UnauthorizedException.kt</ID>
+    <ID>NewLineAtEndOfFile:UserKeyStore.kt:com.embabel.hub.integrations.UserKeyStore.kt</ID>
+    <ID>NewLineAtEndOfFile:UserKeyStoreTest.kt:com.embabel.hub.integrations.UserKeyStoreTest.kt</ID>
+    <ID>NewLineAtEndOfFile:UserLlmResolver.kt:com.embabel.hub.integrations.UserLlmResolver.kt</ID>
+    <ID>NewLineAtEndOfFile:UserModelFactoryTest.kt:com.embabel.hub.integrations.UserModelFactoryTest.kt</ID>
+    <ID>NewLineAtEndOfFile:UserRegistrationRequest.kt:com.embabel.hub.UserRegistrationRequest.kt</ID>
+    <ID>NewLineAtEndOfFile:WebConfig.kt:com.embabel.guide.config.WebConfig.kt</ID>
+    <ID>ReturnCount:AnonymousPrincipalHandshakeHandler.kt:AnonymousPrincipalHandshakeHandler$override fun determineUser: Principal</ID>
+    <ID>ReturnCount:AnonymousPrincipalHandshakeHandler.kt:AnonymousPrincipalHandshakeHandler$private fun extractTokenFromRequest: String?</ID>
+    <ID>ReturnCount:ChatActions.kt:ChatActions$@Action(canRerun = true, trigger = UserMessage::class) fun respond</ID>
+    <ID>ReturnCount:EmailService.kt:EmailService$fun sendVerificationEmail</ID>
+    <ID>ReturnCount:EmailService.kt:EmailService$fun verifyEmail: Boolean</ID>
+    <ID>ReturnCount:GuideStatsService.kt:GuideStatsService$private fun isAdmin: Boolean</ID>
+    <ID>ReturnCount:GuideUserCache.kt:GuideUserCache$private fun read: GuideUser?</ID>
+    <ID>ReturnCount:MessageDeliveryService.kt:MessageDeliveryService$private fun retryDelivery</ID>
+    <ID>ReturnCount:MessageEventListener.kt:MessageEventListener$@EventListener(condition = "#event.status.name() == 'ADDED'") fun onMessageAdded</ID>
+    <ID>ReturnCount:OAuthLoginService.kt:OAuthLoginService$fun handleOAuthCallback: LoginResponse</ID>
+    <ID>ReturnCount:OAuthLoginService.kt:OAuthLoginService$private fun generateUsername: String</ID>
+    <ID>ReturnCount:PersonaIngestionService.kt:PersonaIngestionService$fun ingest: IngestionResult</ID>
+    <ID>ReturnCount:PersonaIngestionService.kt:PersonaIngestionService$fun revalidatePrompt: IngestionResult</ID>
+    <ID>ReturnCount:PersonaService.kt:PersonaService$fun findPrompt: String?</ID>
+    <ID>ReturnCount:PersonaService.kt:PersonaService$private fun resolveInternalId: String</ID>
+    <ID>ReturnCount:RagContentMaintenanceService.kt:RagContentMaintenanceService$@Throws(IOException::class) fun resetGitIngestionRevision: GitRevisionResetResult</ID>
+    <ID>ReturnCount:UserKeyStore.kt:UserKeyStore$fun getActiveKey: Pair&lt;LlmProvider, String&gt;?</ID>
+    <ID>ReturnCount:UserLlmResolver.kt:UserLlmResolver$fun resolve: PromptRunner</ID>
+    <ID>ReturnCount:VersionChunkTransformer.kt:VersionChunkTransformer$override fun additionalMetadata: Map&lt;String, Any&gt;</ID>
+    <ID>SwallowedException:CommandExecutor.kt:CommandExecutor$e: TimeoutException</ID>
+    <ID>SwallowedException:HubApiController.kt:HubApiController$ex: JwtException</ID>
+    <ID>SwallowedException:JwtAuthenticationFilter.kt:JwtAuthenticationFilter$ex: ExpiredJwtException</ID>
+    <ID>SwallowedException:PersonaIngestionService.kt:PersonaIngestionService$e: Exception</ID>
+    <ID>ThrowsCount:GitHubOAuthService.kt:GitHubOAuthService$@Suppress("UNCHECKED_CAST") fun exchangeCodeForUserInfo: OAuthUserInfo</ID>
+    <ID>ThrowsCount:GoogleOAuthService.kt:GoogleOAuthService$fun exchangeCodeForUserInfo: OAuthUserInfo</ID>
+    <ID>ThrowsCount:HubService.kt:HubService$fun changePassword</ID>
+    <ID>ThrowsCount:HubService.kt:HubService$fun loginUser: LoginResponse</ID>
+    <ID>ThrowsCount:HubService.kt:HubService$fun registerUser: GuideUser</ID>
+    <ID>ThrowsCount:OAuthController.kt:OAuthController$@GetMapping("/{provider}/authorize") fun authorize: AuthorizeResponse</ID>
+    <ID>ThrowsCount:PersonaService.kt:PersonaService$@Transactional fun deletePersona</ID>
+    <ID>ThrowsCount:PersonaService.kt:PersonaService$@Transactional fun updatePersona: PersonaDto</ID>
+    <ID>TooGenericExceptionCaught:AnonymousPrincipalHandshakeHandler.kt:AnonymousPrincipalHandshakeHandler$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ChatActions.kt:ChatActions$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:CommandExecutor.kt:CommandExecutor$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DeepgramProxyController.kt:DeepgramProxyController$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:EmailService.kt:EmailService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:FallbackContentFetcher.kt:FallbackContentFetcher$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:GuideRagServiceAdapter.kt:GuideRagServiceAdapter$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:IntegrationsController.kt:IntegrationsController$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:JesseService.kt:JesseService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:JwtAuthenticationFilter.kt:JwtAuthenticationFilter$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:KeyEncryptionService.kt:KeyEncryptionService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:MessageEventListener.kt:MessageEventListener$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PersonaIngestionService.kt:PersonaIngestionService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:PersonaSeedingService.kt:PersonaSeedingService$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:UserModelFactory.kt:UserModelFactory$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WelcomeGreeter.kt:WelcomeGreeterImpl$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:WelcomeGreeter.kt:WelcomeGreeterImpl$fallbackError: Exception</ID>
+    <ID>TooGenericExceptionThrown:ChatActions.kt:ChatActions$throw RuntimeException("Unknown user type: $user")</ID>
+    <ID>TooManyFunctions:ChatActions.kt:ChatActions</ID>
+    <ID>TooManyFunctions:GuideUserRepository.kt:GuideUserRepository</ID>
+    <ID>TooManyFunctions:GuideUserRepositoryDefaultImpl.kt:GuideUserRepositoryDefaultImpl : GuideUserRepository</ID>
+    <ID>TooManyFunctions:GuideUserService.kt:GuideUserService</ID>
+    <ID>TooManyFunctions:HubApiController.kt:HubApiController</ID>
+    <ID>TooManyFunctions:SpddMarkdownProjectionService.kt:SpddMarkdownProjectionService</ID>
+    <ID>UnusedParameter:DeepgramProxyControllerTest.kt:DeepgramProxyControllerTest.Config$mockRestServiceServer: MockRestServiceServer</ID>
+    <ID>UnusedParameter:HubExceptionHandler.kt:HubExceptionHandler$ex: HttpMessageNotReadableException</ID>
+    <ID>UnusedParameter:SpddMarkdownProjectionService.kt:SpddMarkdownProjectionService$root: Path</ID>
+    <ID>WildcardImport:ChatStoreConfigTitleGeneratorTest.kt:import org.mockito.Mockito.*</ID>
+    <ID>WildcardImport:DataManagerControllerTest.kt:import org.mockito.Mockito.*</ID>
+    <ID>WildcardImport:GuideRagServiceAdapter.kt:import com.embabel.agent.api.channel.*</ID>
+    <ID>WildcardImport:GuideUserRepositoryDefaultImplTest.kt:import com.embabel.guide.domain.*</ID>
+    <ID>WildcardImport:GuideUserRepositoryDefaultImplTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:GuideUserServiceTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:HubApiControllerTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:HubServiceTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:IngestionFailureTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:IngestionResultTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:IngestionRunnerTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:IngestionRunnerTest.kt:import org.mockito.Mockito.*</ID>
+    <ID>WildcardImport:IntegrationsController.kt:import org.springframework.web.bind.annotation.*</ID>
+    <ID>WildcardImport:KeyEncryptionServiceTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:PersonaIngestionServiceTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:PersonaRepositoryImplTest.kt:import com.embabel.guide.domain.*</ID>
+    <ID>WildcardImport:PersonaRepositoryImplTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:RateLimitFilterTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:TestApplicationContext.kt:import org.springframework.context.annotation.*</ID>
+    <ID>WildcardImport:UserKeyStoreTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+    <ID>WildcardImport:UserModelFactoryTest.kt:import org.junit.jupiter.api.Assertions.*</ID>
+  </CurrentIssues>
+</SmellBaseline>
