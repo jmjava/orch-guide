@@ -290,6 +290,13 @@ class SpddMarkdownProjectionServiceTest {
   }
 
   @Test
+  fun `getLesson rejects a blank id`() {
+    val service = service(inMemoryRepository(), copyFixtureTo(tempDir.resolve("p")).toString())
+    val e = assertThrows<IllegalArgumentException> { service.getLesson("   ") }
+    assertTrue(e.message!!.contains("id must not be blank"))
+  }
+
+  @Test
   fun `listByLabel rejects labels outside the schema`() {
     val service = service(inMemoryRepository(), copyFixtureTo(tempDir.resolve("p")).toString())
     val e = assertThrows<IllegalArgumentException> { service.listByLabel("ContentElement") }
