@@ -75,6 +75,16 @@ class GitIncrementalDirectorySupportTest {
                 .containsExactlyElementsOf(changed);
     }
 
+    @Test
+    void filterPathsUnderDirectoryReturnsEmptyWhenConfiguredDirIsOutsideGitRoot() {
+        Path root = Path.of("/repo").toAbsolutePath().normalize();
+        Path outside = Path.of("/elsewhere/spdd").toAbsolutePath().normalize();
+        List<String> changed = List.of("README.md", "spdd/canvas/FEAT-001.md");
+
+        assertThat(GitIncrementalDirectorySupport.filterPathsUnderDirectory(root, outside, changed))
+                .isEmpty();
+    }
+
     private static boolean gitAvailable() throws Exception {
         Process p = new ProcessBuilder("git", "--version").start();
         return p.waitFor(5, TimeUnit.SECONDS) && p.exitValue() == 0;
