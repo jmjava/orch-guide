@@ -112,6 +112,20 @@ class SpddDomainToolsTest {
   }
 
   @Test
+  fun `findByLabel clamps an oversized limit to the tool maximum`() {
+    val root = buildProjectManyPitfalls(
+      tempDir.resolve("label-max"),
+      count = SpddMarkdownProjectionService.TOOL_MAX_LIMIT + 1,
+    )
+    val service = SpddMarkdownProjectionService(guideProperties(root.toString()), inMemoryRepository(), objectMapper)
+    service.load()
+    val capTools = SpddDomainTools(service, objectMapper)
+
+    val json = objectMapper.readTree(capTools.findByLabel("Pitfall", limit = 10_000))
+    assertEquals(SpddMarkdownProjectionService.TOOL_MAX_LIMIT, json.size())
+  }
+
+  @Test
   fun `findByLabel surfaces unknown label as error payload`() {
     val json = objectMapper.readTree(tools.findByLabel("DROP TABLE"))
     assertTrue(json.has("error"))
