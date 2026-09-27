@@ -322,6 +322,31 @@ class SpddMarkdownProjectionServiceTest {
     assertEquals(1, result.decisions)
   }
 
+  @Test
+  fun `load skips blank work id unknown kind and malformed json lines`() {
+    val root = buildProject(
+      tempDir.resolve("skip-bad-lines"),
+      canvas = CANVAS,
+      lessonsJsonl = """
+        {not-json
+        {"id":"pitfall:orphan:src/billing:blank.md","kind":"pitfall","work_id":"","area":"src/billing","title":"blank work","body":"must not persist","source":"blank.md","schema":1}
+        {"id":"note:SPIKE-FIX-001-retrieval-fixture:src/billing:note.md","kind":"note","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"unknown kind","body":"must not persist","source":"note.md","schema":1}
+        {"id":"pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:ok.md","kind":"pitfall","work_id":"SPIKE-FIX-001-retrieval-fixture","area":"src/billing","title":"kept","body":"ok","source":"ok.md","schema":1}
+      """.trimIndent(),
+    )
+    val repo = inMemoryRepository()
+    val service = service(repo, root.toString())
+
+    val result = service.load()
+
+    assertEquals(1, result.pitfalls)
+    assertEquals(0, result.skippedFiles)
+    assertEquals("kept", service.getLesson("pitfall:SPIKE-FIX-001-retrieval-fixture:src/billing:ok.md")!!.name)
+    assertEquals(null, service.getLesson("pitfall:orphan:src/billing:blank.md"))
+    assertEquals(null, service.getLesson("note:SPIKE-FIX-001-retrieval-fixture:src/billing:note.md"))
+    assertEquals(1, repo.findByLabel("Pitfall").size)
+  }
+
   // ---------------------------------------------------------------- helpers
 
   private fun service(
