@@ -41,8 +41,14 @@ jobs:
         with:
           servers: ${{ secrets.EMBABEL_ARTIFACTORY }}
 
-      - name: Build guide (skip tests)
-        run: mvn -U -B package -DskipTests
+      # OGD-06: a broken seed must fail here, before package or upload.
+      - name: Refuse skipped export-seed tests
+        run: |
+          chmod +x scripts/assert-export-seed-runs-tests.sh
+          ./scripts/assert-export-seed-runs-tests.sh --self-test
+
+      - name: Build guide
+        run: mvn -U -B package
 
       - name: Pre-cache ONNX embedding model
         run: |
