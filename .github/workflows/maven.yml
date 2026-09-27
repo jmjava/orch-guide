@@ -74,7 +74,7 @@ jobs:
           name: Test Results
           path: target/surefire-reports/*.xml
           reporter: java-junit
-          fail-on-error: false
+          fail-on-error: true
 
       # Upload test reports as artifacts
       - name: Upload Test Reports
