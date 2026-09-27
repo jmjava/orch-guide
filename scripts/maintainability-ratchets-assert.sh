@@ -10,6 +10,7 @@ HOTSPOT="${ROOT}/scripts/hotspot-gate.py"
 FORBID="${ROOT}/scripts/forbid-embabel-upstream.sh"
 WORKFLOW="${ROOT}/.github/workflows/maintainability-ratchets.yml"
 BASELINE="${ROOT}/config/detekt/baseline.xml"
+ARCH_TEST="${ROOT}/src/test/kotlin/com/embabel/guide/fitness/NoEmbabelGuideUpstreamTargetArchTest.kt"
 chmod +x "$DETEKT" "$FORBID" "$HOTSPOT"
 
 fail() {
@@ -68,6 +69,16 @@ after="$(sha256sum "$BASELINE")"
 echo "CI does not rewrite the baseline OK"
 
 echo "== proving: fitness boundary delegates to forbid-embabel-upstream.sh =="
+[[ -f "$ARCH_TEST" ]] || fail "missing ArchUnit fitness test ${ARCH_TEST}"
+if ! grep -q 'archunit-junit5' "${ROOT}/pom.xml"; then
+  fail "pom must depend on archunit-junit5"
+fi
+if ! grep -q 'NoEmbabelGuideUpstreamTargetArchTest' "$WORKFLOW"; then
+  fail "workflow must run the ArchUnit fitness test"
+fi
+if ! grep -q 'classFileThatNamesThePushUrlFailsTheRule' "$ARCH_TEST"; then
+  fail "ArchUnit test must fail a class file that names the push URL"
+fi
 if grep -q 'FORBIDDEN_RE=' "$DETEKT" "$HOTSPOT"; then
   fail "do not duplicate scripts/forbid-embabel-upstream.sh"
 fi

@@ -24,6 +24,7 @@
         <embabel-agent.version>1.0.0-RC1-SNAPSHOT</embabel-agent.version>
         <spring-ai.version>1.1.1</spring-ai.version>
         <kotlin.version>2.3.21</kotlin.version>
+        <archunit.version>1.4.1</archunit.version>
         <pitest.version>1.19.4</pitest.version>
         <pitest-junit5.version>1.2.3</pitest-junit5.version>
     </properties>
@@ -200,6 +201,13 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
 

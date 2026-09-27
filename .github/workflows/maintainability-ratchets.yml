@@ -63,11 +63,23 @@ jobs:
         with:
           java-version: "21"
           distribution: temurin
+          cache: maven
+
+      - name: Configure Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: ${{ secrets.EMBABEL_ARTIFACTORY }}
 
       - name: Fitness boundary and ratchet proofs
         run: |
           chmod +x scripts/forbid-embabel-upstream.sh scripts/detekt-ratchet.sh scripts/maintainability-ratchets-assert.sh
           ./scripts/maintainability-ratchets-assert.sh
+
+      - name: ArchUnit fitness function
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_DUMMY_KEY }}
+        run: ./mvnw -B -DfailIfNoTests=true -Dtest=NoEmbabelGuideUpstreamTargetArchTest test
 
   mutation:
     runs-on: ubuntu-latest
