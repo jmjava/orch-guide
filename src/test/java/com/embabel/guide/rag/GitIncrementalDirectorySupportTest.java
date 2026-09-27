@@ -42,6 +42,13 @@ class GitIncrementalDirectorySupportTest {
     }
 
     @Test
+    void changedPathsBetweenReturnsEmptyWhenEitherRefIsBlank() {
+        assertThat(GitIncrementalDirectorySupport.changedPathsBetween(repo, null, "abc")).isEmpty();
+        assertThat(GitIncrementalDirectorySupport.changedPathsBetween(repo, "abc", "   ")).isEmpty();
+        assertThat(GitIncrementalDirectorySupport.changedPathsBetween(repo, "", "")).isEmpty();
+    }
+
+    @Test
     void findGitWorkTreeRootWalksUpFromSubdirectory() throws Exception {
         Assumptions.assumeTrue(gitAvailable(), "git must be on PATH");
 
