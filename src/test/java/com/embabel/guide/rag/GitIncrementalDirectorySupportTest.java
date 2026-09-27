@@ -42,6 +42,22 @@ class GitIncrementalDirectorySupportTest {
     }
 
     @Test
+    void changedPathsBetweenReturnsEmptyWhenGitDiffFails() throws Exception {
+        Assumptions.assumeTrue(gitAvailable(), "git must be on PATH");
+
+        run(repo, "git", "init");
+        run(repo, "git", "config", "user.email", "test@test.local");
+        run(repo, "git", "config", "user.name", "Test");
+        Files.writeString(repo.resolve("a.txt"), "v1", StandardCharsets.UTF_8);
+        run(repo, "git", "add", "a.txt");
+        run(repo, "git", "commit", "-m", "first");
+
+        assertThat(GitIncrementalDirectorySupport.changedPathsBetween(
+                repo, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef", "HEAD"))
+                .isEmpty();
+    }
+
+    @Test
     void findGitWorkTreeRootWalksUpFromSubdirectory() throws Exception {
         Assumptions.assumeTrue(gitAvailable(), "git must be on PATH");
 
