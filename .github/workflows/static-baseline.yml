@@ -1,0 +1,39 @@
+# Static baseline: detekt fingerprints for Kotlin and SpotBugs fingerprints
+# for Java. A fingerprint frozen in config/ is printed and does not fail.
+# A new fingerprint fails. This workflow does not rewrite either baseline
+# and does not run PIT.
+name: Static baseline
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Configure Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: ${{ secrets.EMBABEL_ARTIFACTORY }}
+
+      - name: Frozen detekt and SpotBugs fingerprints
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_DUMMY_KEY }}
+        run: |
+          chmod +x scripts/static-baseline.sh scripts/static-baseline-assert.sh
+          ./scripts/static-baseline-assert.sh
+          ./scripts/static-baseline.sh
