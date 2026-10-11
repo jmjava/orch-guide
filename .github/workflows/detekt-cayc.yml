@@ -1,0 +1,35 @@
+# Clean as You Code: detekt rates Kotlin lines changed versus origin/main.
+# Checkstyle rates Java lines in that same diff. Detekt does not parse Java.
+# An old finding on an unchanged line stays visible and does not fail the job.
+# This workflow does not create or refresh a baseline.
+name: Detekt clean as you code
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  detekt-cayc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch origin/main
+        run: git fetch origin main
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+
+      - name: Diff-scoped detekt
+        run: |
+          chmod +x scripts/detekt-cayc.sh scripts/detekt-cayc-assert.sh
+          ./scripts/detekt-cayc-assert.sh
+          ./scripts/detekt-cayc.sh
