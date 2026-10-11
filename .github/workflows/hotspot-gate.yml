@@ -1,0 +1,30 @@
+# Hotspot gate: a changed Java or Kotlin file fails only when it is both
+# complex and in the top git change-frequency set. A one-line change in a
+# quiet file stays allowed. Existing complex hotspots are printed and do not
+# fail the job. This workflow does not raise a complexity ceiling and does
+# not rewrite a baseline.
+name: Hotspot gate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hotspot-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch origin/main
+        run: git fetch origin main
+
+      - name: Hotspot gate
+        run: |
+          chmod +x scripts/hotspot-gate.sh scripts/hotspot-gate-assert.sh
+          ./scripts/hotspot-gate-assert.sh
+          ./scripts/hotspot-gate.sh
