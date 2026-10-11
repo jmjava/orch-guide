@@ -201,6 +201,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Fitness function: projection code may not call embabel/guide push URLs. -->
+        <dependency>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit</artifactId>
+            <version>1.4.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-tree</artifactId>
+            <version>9.7.1</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Testcontainers are now provided by drivine4j-spring-boot-starter via @EnableDrivineTestConfig -->
 
     </dependencies>
