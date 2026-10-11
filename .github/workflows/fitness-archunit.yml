@@ -1,0 +1,39 @@
+# Fitness function: projection code may not call embabel/guide push URLs.
+# The ArchUnit rule fails on a projection class that passes such a URL into a call.
+# A mention that is not a call stays allowed. This workflow does not add a
+# detekt baseline, a SpotBugs baseline, or PIT, and it does not raise a ceiling.
+name: Fitness function
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fitness-archunit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Configure Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: ${{ secrets.EMBABEL_ARTIFACTORY }}
+
+      - name: ArchUnit fitness function
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_DUMMY_KEY }}
+        run: |
+          chmod +x scripts/fitness-archunit.sh scripts/fitness-archunit-assert.sh
+          ./scripts/fitness-archunit-assert.sh
+          ./scripts/fitness-archunit.sh
