@@ -379,6 +379,46 @@
                 </executions>
             </plugin>
 
+            <!-- PIT on this module, bounded to the ingestion result types.
+                 Those types are compiled here and are not already gated.
+                 Every mutant must be killed. There is no survived ceiling to raise.
+                 Not bound to a lifecycle phase, so mvn test does not run PIT. -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.19.4</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.3</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <targetClasses>
+                        <param>com.embabel.guide.rag.IngestionResult</param>
+                        <param>com.embabel.guide.rag.IngestionFailure</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.embabel.guide.rag.IngestionResultTest</param>
+                        <param>com.embabel.guide.rag.IngestionFailureTest</param>
+                    </targetTests>
+                    <excludedMethods>
+                        <param>equals</param>
+                        <param>hashCode</param>
+                        <param>toString</param>
+                    </excludedMethods>
+                    <threads>1</threads>
+                    <timestampedReports>false</timestampedReports>
+                    <failWhenNoMutations>true</failWhenNoMutations>
+                    <mutationThreshold>100</mutationThreshold>
+                    <outputFormats>
+                        <outputFormat>XML</outputFormat>
+                    </outputFormats>
+                    <verbose>true</verbose>
+                </configuration>
+            </plugin>
+
             <!-- JaCoCo for code coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
